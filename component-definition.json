@@ -81,9 +81,7 @@
             "aem": {
               "page": {
                 "resourceType": "core/franklin/components/section/v1/section",
-                "template": {
-                  "allowedComponents": ["group:default", "group:blocks"]
-                }
+                "template": {}
               }
             }
           }

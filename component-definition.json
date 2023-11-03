@@ -29,7 +29,7 @@
           }
         },
         {
-          "title": "Image",
+          "title": "Image-exlm",
           "id": "image",
           "plugins": {
             "aem": {

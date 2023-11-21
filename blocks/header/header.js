@@ -1,291 +1,499 @@
-/* eslint-disable no-bitwise */
-import {
-  isDesktop,
-  isMobile,
-  fetchContent,
-  cleanUpDivElems,
-  manageElemState,
-} from '../../scripts/utilities.js';
-
-import { createTag } from '../../scripts/scripts.js';
-
-// Configurable data
-const CONFIG = {
-  basePath: '/fragments/en',
-  topNavPath: '/header/topnav.plain.html',
-  learnPath: '/header/learn.plain.html',
-  communityPath: '/header/community.plain.html',
-  languagePath: '/languages/languages.plain.html',
-};
-
-// Get fragement Data
-const topNavContent = await fetchContent(
-  `${CONFIG.basePath}${CONFIG.topNavPath}`,
-);
-const languageTabContent = await fetchContent(
-  `${CONFIG.basePath}${CONFIG.languagePath}`,
-);
-const learnTabContent = await fetchContent(
-  `${CONFIG.basePath}${CONFIG.learnPath}`,
-);
-const communityTabContent = await fetchContent(
-  `${CONFIG.basePath}${CONFIG.communityPath}`,
-);
-
-// Body Tag
-const bodyTag = document.querySelector('body');
-
-// Paint header content to DOM
-function displayHeaderContent(block) {
-  const navAttributes = {
-    role: 'navigation',
-    class: 'exl-topnav',
-    'aria-label': 'Main navigation',
-  };
-
-  const navWrapper = createTag('nav', navAttributes);
-  navWrapper.innerHTML = topNavContent;
-  block.innerHTML = navWrapper.outerHTML;
-}
-
-// Prepend curtain wrapper inside Body tag
-function exlCurtain() {
-  const exlOverlay = createTag('div', { class: 'exl-curtain' });
-  bodyTag.prepend(exlOverlay);
-}
-
-// Add Hamburger for Mobile
-function exlHamburger(block) {
-  const hamburgerAttributes = {
-    role: 'button',
-    class: 'nav-hamburger',
-    'aria-label': 'menu',
-    'aria-expanded': 'false',
-  };
-  const hamburgerTextContent =
-    '<span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>';
-  const hamburger = createTag('a', hamburgerAttributes, hamburgerTextContent);
-  block.prepend(hamburger);
-
-  if (isMobile) {
-    hamburger.addEventListener('mousedown', () => {
-      manageElemState(hamburger, 'is-active');
-      manageElemState(bodyTag, 'is-shown');
-    });
-  }
-}
-
-// Exl Logo Branding
-function exlBrand(block) {
-  const exlLogo = block.querySelector('.gnav-brand');
-  exlLogo.className = 'exl-brand-container';
-
-  // Remove unwanted Div blocks from logo block
-  cleanUpDivElems(exlLogo, 'h2');
-}
-
-// Decorate Exl Navigation
-function decorateExlNavigation(block) {
-  const selectors = block.querySelectorAll('.exl-topnav .topnav-item');
-
-  selectors.forEach((selector) => {
-    if (selector.classList.contains('large-menu')) {
-      selector.className = 'exl-nav-item large-menu';
-    } else {
-      selector.className = 'exl-nav-item';
-    }
-  });
-
-  // Wrap only nav items in a parent div block
-  const exlNav = createTag('div', { class: 'exl-nav' });
-  const exlTopNav = block.querySelector('.exl-topnav');
-  const exlTopNavFirstChild = exlTopNav.querySelector('.exl-topnav > div');
-  const navItems = exlTopNav.querySelectorAll('.exl-nav-item');
-  const profile = exlTopNav.querySelector('.profile');
-
-  navItems.forEach((item) => {
-    const h2Tag = item.querySelector('h2');
-    if (h2Tag) {
-      item.innerHTML = h2Tag.innerHTML;
-    }
-    exlNav.appendChild(item);
-  });
-
-  exlTopNavFirstChild.insertBefore(exlNav, profile);
-
-  // Replace anchor text with Adobe Logo image
-  const adobeLogo = block.querySelector('.adobe-logo');
-  cleanUpDivElems(adobeLogo, 'a');
-
-  // Reposition Sign up Link
-  exlTopNavFirstChild.insertBefore(profile, adobeLogo);
-
-  // Move nav action items into a parent div block
-  const exlNavActionItems = [
-    '.search',
-    '.language-selector',
-    '.profile',
-    '.adobe-logo',
-  ];
-  const exlNavAction = createTag('div', { class: 'exl-nav-action' });
-  exlNavActionItems.forEach((actionitem) => {
-    exlNavAction.appendChild(exlTopNav.querySelector(actionitem));
-  });
-
-  exlNav.parentNode.insertBefore(exlNavAction, exlNav.nextSibling);
-}
-
-// Update Search content
-function decorateSearchContent(block) {
-  const search = block.querySelector('.exl-topnav .search');
-  const searchFirstChild = block.querySelector('.search > div:nth-child(1)');
-  const searchSecondChild = block.querySelector('.search > div:nth-child(2)');
-  const searchContent = `<span class="exl-search-icon"><svg focusable="false" enable-background="new 0 0 20 20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Search" class="exl-search-svg"><title>Search</title><g fill="currentColor"><path class="exl-magnifier-circle-svg" d="m8.368 16.736c-4.614 0-8.368-3.754-8.368-8.368s3.754-8.368 8.368-8.368 8.368 3.754 8.368 8.368-3.754 8.368-8.368 8.368m0-14.161c-3.195 0-5.793 2.599-5.793 5.793s2.599 5.793 5.793 5.793 5.793-2.599 5.793-5.793-2.599-5.793-5.793-5.793"></path><path d="m18.713 20c-.329 0-.659-.126-.91-.377l-4.552-4.551c-.503-.503-.503-1.318 0-1.82.503-.503 1.318-.503 1.82 0l4.552 4.551c.503.503.503 1.318 0 1.82-.252.251-.581.377-.91.377"></path></g></svg></span><input autocomplete="off" class="exl-search-input" type="text" role="combobox" placeholder="Search Experience League"><button id="dropdownButton" type="button" class="exl-dropdown-picker" aria-haspopup="true"><span class="exl-picker-label">All</span><img src="https://experienceleague.adobe.com/assets/img/chevron_down.svg" height="20" class="exl-icon" aria-hidden="true" /></button>`;
-
-  searchFirstChild.innerHTML = searchContent;
-  searchSecondChild.className = 'search-popover';
-
-  const exlDropdownPicker = search.querySelector('.exl-dropdown-picker');
-  const exlSearchPopover = search.querySelector('.search-popover');
-  const exlDropdownArrow = search.querySelector('.exl-icon');
-  if (exlDropdownPicker) {
-    exlDropdownPicker.addEventListener('mousedown', () => {
-      exlSearchPopover.classList.toggle('show');
-      exlDropdownArrow.classList.toggle('arrow');
-    });
-  }
-
-  document.addEventListener(
-    'click',
-    (event) => {
-      if (event.target.matches('.search') || !event.target.closest('.search')) {
-        exlSearchPopover.classList.remove('show');
-        exlDropdownArrow.classList.remove('arrow');
-      }
-    },
-    false,
-  );
-}
-
-// Update language selector content
-function manageLocale(block) {
-  const languageDiv = createTag('div', {
-    class: 'language-dropdown',
-    'data-id': 'lang-menu',
-  });
-  const languageSelector = block.querySelector('.language-selector');
-
-  cleanUpDivElems(languageSelector, 'a');
-  languageDiv.innerHTML = languageTabContent;
-  cleanUpDivElems(languageDiv, 'ul');
-  languageSelector.appendChild(languageDiv);
-
-  const langAnchor = languageSelector.querySelector('a');
-
-  if (isDesktop) {
-    languageSelector.addEventListener('mouseover', () => {
-      languageSelector.classList.add('active');
-      langAnchor.nextElementSibling.style.display = 'block';
-    });
-
-    languageSelector.addEventListener('mouseout', () => {
-      languageSelector.classList.remove('active');
-      langAnchor.nextElementSibling.style.display = 'none';
-    });
-  }
-
-  if (isMobile) {
-    languageSelector.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      langAnchor.removeAttribute('href');
-      languageDiv.removeAttribute('style');
-      languageSelector.classList.toggle('active');
-    });
-  }
-}
-
-// Decoration Sub navigation content
-function decorateSubNavigation(block) {
-  const exlNavItems = block.querySelectorAll('.exl-nav .exl-nav-item');
-  const exlNavWithLargeMenu = block.querySelectorAll(
-    '.exl-nav .exl-nav-item.large-menu',
-  );
-
-  exlNavItems.forEach((navitem) => {
-    const navitemLink = navitem.querySelector('a');
-    const subNavigationWrapper = createTag('div', {
-      class: 'exl-subnav-wrapper',
-    });
-
-    if (
-      navitem.classList.contains('large-menu') &&
-      navitemLink.innerText.trim().toLowerCase() === 'learn'
-    ) {
-      subNavigationWrapper.innerHTML = learnTabContent;
-      navitem.appendChild(subNavigationWrapper);
-    } else if (
-      navitem.classList.contains('large-menu') &&
-      navitemLink.innerText.trim().toLowerCase() === 'community'
-    ) {
-      subNavigationWrapper.innerHTML = communityTabContent;
-      navitem.appendChild(subNavigationWrapper);
-    }
-  });
-
-  exlNavWithLargeMenu.forEach((largemenu) => {
-    const largemenuHeadings = largemenu.querySelectorAll('h5');
-    const largemenuAnchor = largemenu.querySelector('a');
-    if (isDesktop) {
-      largemenu.addEventListener('mouseover', () => {
-        block.classList.add('exl-overlay');
-        largemenuAnchor.classList.add('active');
-      });
-
-      largemenu.addEventListener('mouseout', () => {
-        block.classList.remove('exl-overlay');
-        largemenuAnchor.classList.remove('active');
-      });
-    }
-
-    if (isMobile) {
-      largemenuAnchor.addEventListener('click', (event) => {
-        event.preventDefault();
-        largemenuAnchor.removeAttribute('href');
-        largemenuAnchor.nextElementSibling.removeAttribute('style');
-        manageElemState(largemenu, 'is-expanded');
-      });
-
-      largemenuHeadings.forEach((heading) => {
-        heading.addEventListener('click', () => {
-          heading.parentElement.parentElement.parentElement.classList.toggle(
-            'show',
-          );
-        });
-      });
-    }
-  });
-
-  // Assign redirects to sub menu anchor links
-  const subMenuAnchorLinks = block.querySelectorAll('.exl-subnav-wrapper a');
-
-  subMenuAnchorLinks.forEach((submenuanchor) => {
-    if (submenuanchor.getAttribute('href').indexOf('#_blank') !== -1) {
-      submenuanchor.classList.add('redirect');
-    }
-  });
-}
+import { decorateIcons } from '../../scripts/lib-franklin.js';
+import { loadIms } from '../../scripts/scripts.js';
+import { registerResizeHandler } from './header-utils.js';
 
 /**
- * decorates the header, mainly the nav
- * @param {Element} block The header block element
+ * @param {HTMLElement} block
+ * @returns {HTMLElement}
  */
-export default async function decorate(block) {
-  displayHeaderContent(block);
-  exlCurtain();
-  exlHamburger(block);
-  exlBrand(block);
-  decorateExlNavigation(block);
-  decorateSearchContent(block);
-  manageLocale(block);
-  decorateSubNavigation(block);
+const getBlockFirstCell = (block) => block.querySelector(':scope > div > div');
+
+/**
+ * @param {HTMLElement} block
+ * @returns {HTMLElement}
+ */
+const getBlockFirstRow = (block) => block.querySelector(':scope > div');
+
+/**
+ * simplified single cell block to one wrapper div.
+ * @param {HTMLElement} el
+ * @param {string} selector
+ * @returns {HTMLElement}
+ */
+const simplifySingleCellBlock = (block) => {
+  const firstRowFirstCell = getBlockFirstCell(block);
+  block.innerHTML = firstRowFirstCell.innerHTML;
+  return block;
+};
+
+/**
+ * https://www.codemzy.com/blog/random-unique-id-javascript
+ * @param {number} length
+ */
+const randomId = (length = 6) =>
+  Math.random()
+    .toString(36)
+    .substring(2, length + 2);
+
+/**
+ * @param {HTMLElement} block
+ * @param {number} row
+ * @param {number} cell
+ * @returns
+ */
+const getCell = (block, row, cell) => block.querySelector(`:scope > div:nth-child(${row}) > div:nth-child(${cell})`);
+
+/**
+ * creates an element from html string
+ * @param {string} html
+ * @returns {HTMLElement}
+ */
+function htmlToElement(html) {
+  const template = document.createElement('template');
+  const trimmedHtml = html.trim(); // Never return a text node of whitespace as the result
+  template.innerHTML = trimmedHtml;
+  return template.content.firstElementChild;
+}
+// fetch fragment html
+const fetchFragment = async (rePath, lang = 'en') => {
+  const response = await fetch(`/fragments/${lang}/${rePath}.plain.html`);
+  return response.text();
+};
+// Mobile Only (Until 1024px)
+const isMobile = () => window.matchMedia('(max-width: 1023px)').matches;
+
+const headerFragment = fetchFragment('header/header');
+const languageFragment = fetchFragment('languages/languages');
+const decoratorState = {};
+
+/**
+ * Decorates the brand block
+ * @param {HTMLElement} brandBlock
+ * */
+const brandDecorator = (brandBlock) => {
+  simplifySingleCellBlock(brandBlock);
+  const brandLink = brandBlock.querySelector('a'); // we expect one.
+  brandBlock.replaceChildren(brandLink);
+  return brandBlock;
+};
+
+/**
+ * adds hambuger button to nav wrapper
+ * @param {HTMLElement} navWrapper
+ * @returns {HTMLButtonElement}
+ */
+const hamburgerButton = (navWrapper) => {
+  const navWrapperId = 'nav-wrapper';
+  const button = htmlToElement(`
+    <button 
+      class="nav-hamburger"
+      aria-label="Navigation menu"
+      aria-expanded="false"
+      aria-haspopup="true"
+      aria-controls="${navWrapperId}"></button>`);
+  navWrapper.id = navWrapperId;
+  button.addEventListener('click', () => {
+    const isExpanded = button.getAttribute('aria-expanded') === 'true';
+    button.setAttribute('aria-expanded', !isExpanded);
+    navWrapper.classList.toggle('nav-wrapper-expanded');
+  });
+  return button;
+};
+
+/**
+ * Builds nav items from the provided basic list
+ * @param {HTMLUListElement} ul
+ */
+const buildNavItems = (ul, level = 0) => {
+  if (level === 0) {
+    // add search link (visible on mobile only)
+    ul.appendChild(htmlToElement(`<li class="nav-item-mobile">${decoratorState.searchLinkHtml}</li>`));
+    // add language select (visible on mobile only)
+    ul.appendChild(
+      htmlToElement(
+        `<li class="nav-item-mobile">
+          <p>${decoratorState.languageTitle}</p>
+          <ul>
+            ${decoratorState.languages.map((l) => `<li><a href="${l.lang}">${l.title}</a></li>`).join('')}
+          </ul>
+        </li>`,
+      ),
+    );
+  }
+  [...ul.children].forEach((navItem) => {
+    const navItemClasses = ['nav-item'];
+    if (level === 0) navItemClasses.push('nav-item-root');
+    navItem.classList.add(...navItemClasses);
+    const controlName = `content-${level}-${randomId()}`; // unique id
+    const [content, secondaryContent] = navItem.querySelectorAll(':scope > ul');
+    if (content) {
+      const firstEl = navItem.firstElementChild;
+      const toggleClass = level === 0 ? 'nav-item-toggle nav-item-toggle-root' : 'nav-item-toggle';
+      const toggler = htmlToElement(
+        `<button class="${toggleClass}" aria-controls="${controlName}" aria-expanded="false">${firstEl.textContent}</button>`,
+      );
+      const navItemContent = document.createElement('div');
+      navItemContent.append(content);
+      navItemContent.setAttribute('id', controlName);
+      navItemContent.classList.add('nav-item-content');
+      if (secondaryContent) {
+        secondaryContent.classList.add('nav-items-secondary');
+        navItemContent.append(secondaryContent);
+      }
+      const children = [toggler, navItemContent];
+
+      navItem.replaceChildren(...children);
+      const currentActiveClass = 'nav-item-expanded-active';
+      const itemContentExpanded = 'nav-item-content-expanded';
+      const itemExpanded = 'nav-item-expanded';
+
+      const isNotAncestorOfToggler = (parent) =>
+        parent && !parent.contains(toggler) && !parent.parentElement.contains(toggler);
+      const getAllByClass = (className) => [...document.querySelectorAll(`.${className}`)];
+      const removeClassFromAll = (className) =>
+        getAllByClass(className).forEach((el) => el.classList.remove(className));
+      const removeClassFromNonAncestorAll = (className) => {
+        getAllByClass(className)
+          .filter(isNotAncestorOfToggler)
+          .forEach((el) => el.classList.remove(className));
+      };
+
+      const resetExpandedAttribute = () => {
+        const els = document.querySelectorAll(`header [aria-expanded="true"]`);
+        if (els && els.length)
+          [...els].filter(isNotAncestorOfToggler).forEach((el) => el.setAttribute('aria-expanded', false));
+      };
+
+      const setExpandedState = (toggleElement, containerElement, expanded) => {
+        // reset state
+
+        // set new state
+        resetExpandedAttribute();
+        toggleElement.setAttribute('aria-expanded', expanded);
+        // remove active class from all other expanded nav items
+        removeClassFromNonAncestorAll(itemExpanded);
+        removeClassFromNonAncestorAll(itemContentExpanded);
+        removeClassFromAll(currentActiveClass);
+        if (expanded) {
+          containerElement.classList.add(itemContentExpanded);
+          containerElement.parentElement.classList.add(itemExpanded);
+          containerElement.parentElement.classList.add(currentActiveClass);
+        } else {
+          containerElement.classList.remove(itemContentExpanded);
+          containerElement.parentElement.classList.remove(itemExpanded);
+          containerElement.parentElement.classList.remove(currentActiveClass);
+        }
+      };
+
+      /** @param {Event} e */
+      const toggleExpandContent = (e) => {
+        const isExpanded = toggler.getAttribute('aria-expanded') === 'true';
+        setExpandedState(toggler, navItemContent, !isExpanded);
+        if (e.type === 'mouseenter') {
+          const childContents = e.target.querySelectorAll('.nav-item-content');
+          childContents.forEach((childContent) => {
+            childContent.classList.add('nav-item-content-expanded');
+          });
+        }
+      };
+      // listen for page resize, update events accordingly
+      registerResizeHandler(() => {
+        if (isMobile()) {
+          // if mobile, add click event, remove mouseenter/mouseleave
+          toggler.addEventListener('click', toggleExpandContent);
+          toggler.parentElement.removeEventListener('mouseenter', toggleExpandContent);
+          toggler.parentElement.removeEventListener('mouseleave', toggleExpandContent);
+        } else {
+          // if desktop, add mouseenter/mouseleave, remove click event
+          toggler.removeEventListener('click', toggleExpandContent);
+          if (level === 0) {
+            toggler.parentElement.addEventListener('mouseenter', toggleExpandContent);
+            toggler.parentElement.addEventListener('mouseleave', toggleExpandContent);
+          }
+        }
+      });
+      buildNavItems(content, level + 1);
+    } else {
+      navItem.classList.add('nav-item-leaf');
+      // if nav item is a leaf, remove the <p> wrapper
+      const firstEl = navItem.firstElementChild;
+      if (firstEl?.tagName === 'P') {
+        if (firstEl.firstElementChild?.tagName === 'A') {
+          firstEl.replaceWith(firstEl.firstElementChild);
+        }
+      }
+      // if nav item has a second element, it's a subtitle
+      const secondEl = navItem.children[1];
+      if (secondEl?.tagName === 'P') {
+        const subtitle = htmlToElement(`<span class="nav-item-subtitle">${secondEl.innerHTML}</span>`);
+        navItem.firstElementChild.appendChild(subtitle);
+        secondEl.remove();
+      }
+    }
+  });
+};
+
+/**
+ * Decorates the nav block
+ * @param {HTMLElement} navBlock
+ */
+const navDecorator = (navBlock) => {
+  simplifySingleCellBlock(navBlock);
+  const navWrapper = htmlToElement('<div class="nav-wrapper"></div>');
+  const hamburger = hamburgerButton(navWrapper);
+  navWrapper.replaceChildren(hamburger, ...navBlock.children);
+  navBlock.replaceChildren(navWrapper);
+
+  // build navItems
+  const ul = navWrapper.querySelector(':scope > ul');
+  buildNavItems(ul);
+
+  navBlock.firstChild.id = hamburger.getAttribute('aria-controls');
+  navBlock.prepend(hamburger);
+};
+
+/**
+ * Decorates the search block
+ * @param {HTMLElement} searchBlock
+ */
+const searchDecorator = (searchBlock) => {
+  // save this for later use in mobile nav.
+  const searchLink = getCell(searchBlock, 1, 1)?.firstChild;
+  decoratorState.searchLinkHtml = searchLink.outerHTML;
+
+  // get search placeholder
+  const searchPlaceholder = getCell(searchBlock, 1, 2)?.firstChild;
+  // build search options
+  const searchOptions = getCell(searchBlock, 1, 3)?.firstElementChild?.children || [];
+
+  const options = [...searchOptions]
+    .map((option) => `<span class="search-picker-label">${option.textContent}</span>`)
+    .join('');
+
+  searchBlock.innerHTML = `<div class="search-wrapper">
+    <div class="search-short">
+      <a href="https://experienceleague.adobe.com/search.html">
+        <span class="icon icon-search"></span>
+      </a>
+    </div>
+    <div class="search-full">
+      <span class="icon icon-search"></span>
+      <input autocomplete="off" class="search-input" type="text" role="combobox" placeholder="${searchPlaceholder.textContent}">
+      <button type="button" class="search-picker-button" aria-haspopup="true" aria-controls="search-picker-popover">
+        <span class="search-picker-label">All</span>
+      </button>
+      <div class="search-picker-popover" id="search-picker-popover">
+        ${options}
+      </div>
+    <div>
+  </div>`;
+  decorateIcons(searchBlock);
+  return searchBlock;
+};
+
+/**
+ * Decorates the sign-up block
+ * @param {HTMLElement} signUpBlock
+ */
+const signUpDecorator = (signUpBlock) => {
+  simplifySingleCellBlock(signUpBlock);
+  return signUpBlock;
+};
+
+/**
+ * Decorates the language-selector block
+ * @param {HTMLElement} languageBlock
+ */
+const languageDecorator = async (languageBlock) => {
+  const title = getCell(languageBlock, 1, 1)?.firstChild.textContent;
+  decoratorState.languageTitle = title;
+
+  const popoverId = 'language-picker-popover';
+  const prependLanguagePopover = async (parent) => {
+    let languagesEl = htmlToElement(await languageFragment);
+    languagesEl = languagesEl.querySelector('ul');
+
+    const languageOptions = languagesEl?.children || [];
+    const languages = [...languageOptions].map((option) => ({
+      title: option.textContent,
+      lang: option?.firstElementChild?.href,
+    }));
+
+    decoratorState.languages = languages;
+
+    const options = languages
+      .map((option) => `<span class="language-selector-label" data-value="${option.lang}">${option.title}</span>`)
+      .join('');
+    const popover = htmlToElement(`
+      <div class="language-selector-popover" id="${popoverId}">
+        ${options}
+      </div>`);
+    parent.append(popover);
+  };
+
+  const languageHtml = `
+      <button type="button" class="language-selector-button" aria-haspopup="true" aria-controls="language-picker-popover" aria-label="${title}">
+        <span class="icon icon-globegrid"></span>
+      </button>
+    `;
+  languageBlock.innerHTML = languageHtml;
+  decorateIcons(languageBlock);
+  await prependLanguagePopover(languageBlock);
+  return languageBlock;
+};
+
+/**
+ * Decorates the sign-in block
+ * @param {HTMLElement} signInBlock
+ */
+const signInDecorator = async (signInBlock) => {
+  simplifySingleCellBlock(signInBlock);
+
+  let adobeIMS = {
+    isSignedInUser: () => false,
+  };
+  try {
+    const ims = await loadIms();
+    adobeIMS = ims.adobeIMS;
+  } catch {
+    // eslint-disable-next-line no-console
+    console.warn('Adobe IMS not available.');
+  }
+  const isSignedIn = adobeIMS?.isSignedInUser();
+  if (isSignedIn) {
+    signInBlock.classList.add('signed-in');
+    signInBlock.replaceChildren(
+      htmlToElement(
+        `<div class="profile">
+          <button class="profile-toggle" aria-controls="profile-menu">
+            <span class="icon icon-profile"></span>
+          </button>
+          <div class="profile-menu" id="profile-menu">
+            <a href="#dashboard/profile">Profile</a>
+            <a href="#dashboard/awards">Achievements</a>
+            <a href="#dashboard/bookmarks">Bookmarks</a>
+            <a data-id="sign-out">Sign Out</a>
+          </div>
+        </div>`,
+      ),
+    );
+    const toggler = signInBlock.querySelector('.profile-toggle');
+    signInBlock.querySelector('[data-id="sign-out"]').addEventListener('click', async () => {
+      adobeIMS.signOut();
+    });
+    const toggleExpandContent = () => {
+      const isExpanded = toggler.getAttribute('aria-expanded') === 'true';
+      toggler.setAttribute('aria-expanded', !isExpanded);
+      const profileMenu = toggler.nextElementSibling;
+      const expandedClass = 'profile-menu-expanded';
+      if (!isExpanded) {
+        profileMenu.classList.add(expandedClass);
+      } else {
+        profileMenu.classList.remove(expandedClass);
+      }
+    };
+    registerResizeHandler(() => {
+      if (isMobile()) {
+        // if mobile, add click event, remove mouseenter/mouseleave
+        toggler.addEventListener('click', toggleExpandContent);
+        toggler.parentElement.removeEventListener('mouseenter', toggleExpandContent);
+        toggler.parentElement.removeEventListener('mouseleave', toggleExpandContent);
+      } else {
+        // if desktop, add mouseenter/mouseleave, remove click event
+        toggler.removeEventListener('click', toggleExpandContent);
+        toggler.parentElement.addEventListener('mouseenter', toggleExpandContent);
+        toggler.parentElement.addEventListener('mouseleave', toggleExpandContent);
+      }
+    });
+  } else {
+    signInBlock.classList.remove('signed-in');
+    signInBlock.firstChild.addEventListener('click', async () => {
+      adobeIMS.signIn();
+    });
+  }
+  return signInBlock;
+};
+
+/**
+ * Decorates the adobe-logo block
+ * @param {HTMLElement} adobeLogoBlock
+ */
+const adobeLogoDecorator = (adobeLogoBlock) => {
+  simplifySingleCellBlock(adobeLogoBlock);
+  return adobeLogoBlock;
+};
+
+/** @param {HTMLElement} block  */
+const decorateNewTabLinks = (block) => {
+  const links = block.querySelectorAll('a[target="_blank"]');
+  links.forEach((link) => {
+    link.setAttribute('rel', 'noopener noreferrer');
+    // insert before first text child node
+    const icon = htmlToElement('<span class="icon icon-link-out"></span>');
+    link.firstChild.after(icon);
+  });
+};
+
+/** @param {HTMLElement} block  */
+const decorateLinks = (block) => {
+  const links = block.querySelectorAll('a');
+  links.forEach((link) => {
+    const decodedHref = decodeURIComponent(link.getAttribute('href'));
+    const firstCurlyIndex = decodedHref.indexOf('{');
+    const lastCurlyIndex = decodedHref.lastIndexOf('}');
+    if (firstCurlyIndex > -1 && lastCurlyIndex > -1) {
+      // get string between curly braces including curly braces
+      const options = decodedHref.substring(firstCurlyIndex, lastCurlyIndex + 1);
+      Object.entries(JSON.parse(options)).forEach(([key, value]) => {
+        link.setAttribute(key.trim(), value);
+      });
+      const endIndex = decodedHref.charAt(firstCurlyIndex - 1) === '#' ? firstCurlyIndex - 1 : firstCurlyIndex;
+      link.href = decodedHref.substring(0, endIndex);
+    }
+  });
+};
+/**
+ * Main header decorator, calls all the other decorators
+ * @param {HTMLElement} headerBlock
+ */
+export default async function decorate(headerBlock) {
+  headerBlock.style.display = 'none';
+  // eslint-disable-next-line no-unused-vars
+  headerBlock.innerHTML = await headerFragment;
+
+  const headerBlockFirstRow = getBlockFirstRow(headerBlock);
+  headerBlockFirstRow.outerHTML = `<nav>${headerBlockFirstRow.innerHTML}</nav>`;
+  const nav = headerBlock.querySelector('nav');
+  nav.role = 'navigation';
+  nav.ariaLabel = 'Main navigation';
+
+  // order matters.
+  const decorators = [
+    { className: 'brand', decorator: brandDecorator },
+    { className: 'search', decorator: searchDecorator },
+    { className: 'sign-up', decorator: signUpDecorator },
+    { className: 'language-selector', decorator: languageDecorator },
+    { className: 'sign-in', decorator: signInDecorator },
+    { className: 'adobe-logo', decorator: adobeLogoDecorator },
+    { className: 'nav', decorator: navDecorator },
+  ];
+
+  for (let i = 0; i < decorators.length; i += 1) {
+    const { className, decorator } = decorators[i];
+    const block = nav.querySelector(`:scope > .${className}`);
+    if (block) {
+      // eslint-disable-next-line no-await-in-loop
+      await decorator(block);
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn(`No header block found for class: ${className}`);
+    }
+  }
+
+  decorateLinks(headerBlock);
+  decorateNewTabLinks(headerBlock);
+
+  // do this at the end, always.
+  decorateIcons(headerBlock);
+  headerBlock.style.display = '';
 }

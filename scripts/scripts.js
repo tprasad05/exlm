@@ -12,8 +12,10 @@ import {
   waitForLCP,
   loadBlocks,
   loadCSS,
+  decorateButtons,
+  getMetadata,
+  loadScript,
 } from './lib-franklin.js';
-import { isMobileResolution } from './utilities.js';
 
 const LCP_BLOCKS = []; // add your LCP blocks to the list
 
@@ -25,208 +27,11 @@ function buildHeroBlock(main) {
   const h1 = main.querySelector('h1');
   const picture = main.querySelector('picture');
   // eslint-disable-next-line no-bitwise
-  if (
-    h1 &&
-    picture &&
-    h1.compareDocumentPosition(picture) & Node.DOCUMENT_POSITION_PRECEDING
-  ) {
+  if (h1 && picture && h1.compareDocumentPosition(picture) & Node.DOCUMENT_POSITION_PRECEDING) {
     const section = document.createElement('div');
     section.append(buildBlock('hero', { elems: [picture, h1] }));
     main.prepend(section);
   }
-}
-
-function hideMobileLayoutToggle(e) {
-  const wrapper = document.querySelector('.rail-mobile-wrapper-visible');
-  if (wrapper && (!e.target || (e.target && !wrapper.contains(e.target)))) {
-    wrapper.classList.remove('rail-mobile-wrapper-visible');
-    document.removeEventListener('click', hideMobileLayoutToggle);
-  }
-}
-
-function buildMobileToggle(leftRail) {
-  leftRail.classList.add('rail-mobile-section', 'rail-section');
-  let mobileRailButton = leftRail.querySelector('.rail-mobile-button');
-  if (mobileRailButton) {
-    return;
-  }
-  const leftRailContents = leftRail.innerHTML;
-  const originalWrapper = leftRail.querySelector('.rail-mobile-wrapper');
-  const wrapper = originalWrapper || document.createElement('div');
-  wrapper.classList.add('rail-mobile-wrapper');
-  mobileRailButton = document.createElement('button');
-  mobileRailButton.classList.add('rail-mobile-button');
-  mobileRailButton.innerText = 'Table of Contents';
-  mobileRailButton.addEventListener('click', (e) => {
-    if (!wrapper.classList.contains('rail-mobile-wrapper-visible')) {
-      wrapper.classList.add('rail-mobile-wrapper-visible');
-      e.stopPropagation();
-      document.addEventListener('click', hideMobileLayoutToggle);
-    }
-  });
-  if (!originalWrapper) {
-    wrapper.innerHTML = leftRailContents;
-    leftRail.innerHTML = '';
-    leftRail.appendChild(wrapper);
-  }
-  leftRail.appendChild(mobileRailButton);
-}
-
-function attachToggleLayoutEvent({
-  toggleElement,
-  railElement,
-  main,
-  isLeftSection,
-}) {
-  railElement.classList.add('rail-events-attached');
-  toggleElement.addEventListener('click', () => {
-    const MIN_RAIL_WIDTH = '40px';
-    const MAX_RAIL_WIDTH = '20%';
-    let leftSectionWidth;
-    let rightSectionWidth;
-    if (toggleElement.classList.contains('rail-section-toggler-expanded')) {
-      toggleElement.classList.remove('rail-section-toggler-expanded');
-      railElement.classList.remove('rail-section-expanded');
-      if (isLeftSection) {
-        leftSectionWidth = MIN_RAIL_WIDTH;
-        rightSectionWidth = main.children[2]?.classList?.contains(
-          'rail-section-expanded',
-        )
-          ? MAX_RAIL_WIDTH
-          : MIN_RAIL_WIDTH;
-      } else {
-        leftSectionWidth = main.children[0]?.classList?.contains(
-          'rail-section-expanded',
-        )
-          ? MAX_RAIL_WIDTH
-          : MIN_RAIL_WIDTH;
-        rightSectionWidth = MIN_RAIL_WIDTH;
-      }
-    } else {
-      toggleElement.classList.add('rail-section-toggler-expanded');
-      railElement.classList.add('rail-section-expanded');
-      if (isLeftSection) {
-        leftSectionWidth = MAX_RAIL_WIDTH;
-        rightSectionWidth = main.children[2].classList.contains(
-          'rail-section-expanded',
-        )
-          ? MAX_RAIL_WIDTH
-          : MIN_RAIL_WIDTH;
-      } else {
-        leftSectionWidth = main.children[0].classList.contains(
-          'rail-section-expanded',
-        )
-          ? MAX_RAIL_WIDTH
-          : MIN_RAIL_WIDTH;
-        rightSectionWidth = MAX_RAIL_WIDTH;
-      }
-    }
-    main.style.gridTemplateColumns = `${leftSectionWidth} 1fr ${rightSectionWidth}`;
-  });
-}
-
-function createToggleLayoutSection(main, railElement, isLeftSection = true) {
-  const secondaryClassName = isLeftSection
-    ? 'rail-section-left'
-    : 'rail-section-right';
-  railElement.classList.add(
-    'rail-section',
-    secondaryClassName,
-    'rail-section-expanded',
-  );
-  const originalWrapper = railElement.querySelector('.rail-section-wrapper');
-  const wrapperElement = originalWrapper || document.createElement('div');
-  wrapperElement.classList.add('rail-section-wrapper');
-  if (!originalWrapper) {
-    const railChildren = railElement.innerHTML;
-    wrapperElement.innerHTML = railChildren;
-    railElement.replaceChildren(wrapperElement);
-  }
-  const originalToggleElement = railElement.querySelector(
-    '.rail-section-toggler',
-  );
-  if (originalToggleElement) {
-    return;
-  }
-  const toggleElement = document.createElement('div');
-  toggleElement.classList.add(
-    'rail-section-toggler',
-    'rail-section-toggler-expanded',
-  );
-  toggleElement.innerHTML = '<span class="icon icon-rail"></span>';
-  railElement.appendChild(toggleElement);
-  attachToggleLayoutEvent({ toggleElement, railElement, main, isLeftSection });
-}
-
-/**
- * Update the layout structure dynamically based on window dimensions
- * Triggered from window resize event
- */
-function handleLayoutResize() {
-  const main = document.querySelector('main');
-  const isMobile = isMobileResolution();
-  const [leftRail, content, rightRail] = main.children;
-  if (isMobile && main.classList.contains('three-col-layout')) {
-    main.classList.remove('three-col-layout');
-    content.classList.remove('content-section');
-    rightRail.classList.add('rail-hidden');
-    const mRailWrapper = main.querySelector('.rail-section-wrapper');
-    if (mRailWrapper) {
-      mRailWrapper.classList.add('rail-mobile-wrapper');
-      mRailWrapper.classList.remove('rail-section-wrapper');
-    }
-    buildMobileToggle(leftRail);
-  } else if (!isMobile && !main.classList.contains('three-col-layout')) {
-    main.classList.add('three-col-layout');
-    content.classList.add('content-section');
-    leftRail.classList.remove('rail-mobile-section');
-    rightRail.classList.remove('rail-hidden', 'rail-mobile-section');
-    leftRail.classList.add('rail-section-left', 'rail-section-expanded');
-    rightRail.classList.add('rail-section-right', 'rail-section-expanded');
-    const mRailWrapper = main.querySelector('.rail-mobile-wrapper');
-    if (mRailWrapper) {
-      mRailWrapper.classList.remove('rail-mobile-wrapper');
-      mRailWrapper.classList.add('rail-section-wrapper');
-    }
-    main.style.gridTemplateColumns = '';
-    createToggleLayoutSection(main, leftRail, true);
-    createToggleLayoutSection(main, rightRail, false);
-    decorateIcons(main);
-  }
-}
-
-/**
- * Builds three column grid layout with left/right toggle section
- * @param {Element} main The container element
- */
-function buildLayout(main) {
-  // Get all child div elements
-  const childDivs = main?.children;
-
-  // Ensure there are at least 3 child divs
-  if (childDivs?.length !== 3) {
-    return;
-  }
-  window.addEventListener('resize', handleLayoutResize);
-  const [leftRail, content, rightRail] = main.children;
-
-  const isMobileRes = isMobileResolution();
-  if (isMobileRes) {
-    if (rightRail) {
-      rightRail.classList.add('rail-hidden');
-    }
-    if (leftRail) {
-      buildMobileToggle(leftRail);
-    }
-    return;
-  }
-
-  // Set CSS styles for the layout
-  main.classList.add('three-col-layout');
-  content.classList.add('content-section');
-  createToggleLayoutSection(main, leftRail, true);
-  createToggleLayoutSection(main, rightRail, false);
-  decorateIcons(main);
 }
 
 /**
@@ -235,8 +40,7 @@ function buildLayout(main) {
 async function loadFonts() {
   await loadCSS(`${window.hlx.codeBasePath}/styles/fonts.css`);
   try {
-    if (!window.location.hostname.includes('localhost'))
-      sessionStorage.setItem('fonts-loaded', 'true');
+    if (!window.location.hostname.includes('localhost')) sessionStorage.setItem('fonts-loaded', 'true');
   } catch (e) {
     // do nothing
   }
@@ -324,8 +128,27 @@ export function decorateExternalLinks(main) {
     const href = a.getAttribute('href');
     if (href.includes('#_blank')) {
       a.setAttribute('target', '_blank');
+    } else if (href && !href.startsWith('#')) {
+      if (a.hostname !== window.location.hostname) {
+        a.setAttribute('target', '_blank');
+      }
+      if (!href.startsWith('/') && !href.startsWith('http')) {
+        a.href = `//${href}`;
+      }
     }
   });
+}
+
+/**
+ * Check if current page is a MD Docs Page.
+ * theme = docs is set in bulk metadata for docs paths.
+ */
+export function isDocPage() {
+  const theme = getMetadata('theme');
+  return theme
+    .split(',')
+    .map((t) => t.toLowerCase())
+    .includes('docs');
 }
 
 /**
@@ -334,20 +157,15 @@ export function decorateExternalLinks(main) {
  */
 // eslint-disable-next-line import/prefer-default-export
 export function decorateMain(main) {
-  /**
-   * Franklin converts paragraphs containing a single
-   * link as buttons. This is not the behaviour we need.
-   * The original decorateButtons function is however
-   * retained and will be revisited during button specific
-   * decoration.
-   */
-  // decorateButtons(main);
+  // docs pages do not use buttons, only links
+  if (!isDocPage()) {
+    decorateButtons(main);
+  }
   decorateIcons(main);
   decorateExternalLinks(main);
   buildAutoBlocks(main);
   decorateSections(main);
   decorateBlocks(main);
-  buildLayout(main);
 }
 
 /**
@@ -374,6 +192,47 @@ async function loadEager(doc) {
   }
 }
 
+export const locales = new Map([
+  ['de', 'de_DE'],
+  ['en', 'en_US'],
+  ['es', 'es_ES'],
+  ['fr', 'fr_FR'],
+  ['it', 'it_IT'],
+  ['ja', 'ja_JP'],
+  ['ko', 'ko_KO'],
+  ['pt-BR', 'pt_BR'],
+  ['zh-Hans', 'zh_HANS'],
+]);
+
+let imsLoaded;
+export async function loadIms() {
+  imsLoaded =
+    imsLoaded ||
+    new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('IMS timeout')), 5000);
+      window.adobeid = {
+        client_id: 'ExperienceLeague_Dev',
+        scope:
+          'AdobeID,additional_info.company,additional_info.ownerOrg,avatar,openid,read_organizations,read_pc,session,account_cluster.read',
+        locale: locales.get(document.querySelector('html').lang) || locales.get('en'),
+        debug: false,
+        onReady: (args) => {
+          // eslint-disable-next-line no-console
+          console.log('Adobe IMS Ready!', args);
+          resolve({
+            ...args,
+            // eslint-disable-next-line no-undef
+            adobeIMS,
+          });
+          clearTimeout(timeout);
+        },
+        onError: reject,
+      };
+      loadScript('https://auth.services.adobe.com/imslib/imslib.min.js');
+    });
+  return imsLoaded;
+}
+
 /**
  * Loads everything that doesn't need to be delayed.
  * @param {Element} doc The container element
@@ -385,7 +244,7 @@ async function loadLazy(doc) {
   const { hash } = window.location;
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
-
+  loadIms(); // start it early, asyncronously
   loadHeader(doc.querySelector('header'));
   loadFooter(doc.querySelector('footer'));
 
@@ -420,19 +279,13 @@ export function createTag(tag, attributes, html) {
 }
 
 export function loadPrevNextBtn() {
-  const mainDoc = document.querySelector('main >div:nth-child(2)');
+  const mainDoc = document.querySelector('main > div:nth-child(1)');
   if (!mainDoc) return;
 
   const prevPageMeta = document.querySelector('meta[name="prev-page"]');
   const nextPageMeta = document.querySelector('meta[name="next-page"]');
-  const prevPageMetaContent = prevPageMeta
-    ?.getAttribute('content')
-    .trim()
-    .split('.html')[0];
-  const nextPageMetaContent = nextPageMeta
-    ?.getAttribute('content')
-    .trim()
-    .split('.html')[0];
+  const prevPageMetaContent = prevPageMeta?.getAttribute('content').trim().split('.html')[0];
+  const nextPageMetaContent = nextPageMeta?.getAttribute('content').trim().split('.html')[0];
   const PREV_PAGE = 'Previous page';
   const NEXT_PAGE = 'Next page';
 
@@ -489,9 +342,23 @@ function loadDelayed() {
   // load anything that can be postponed to the latest here
 }
 
+/**
+ * Custom - Loads the right and left rails for doc pages only.
+ */
+async function loadRails() {
+  if (isDocPage()) {
+    loadCSS(`${window.hlx.codeBasePath}/scripts/rails/rails.css`);
+    const mod = await import('./rails/rails.js');
+    if (mod.default) {
+      await mod.default();
+    }
+  }
+}
+
 async function loadPage() {
   await loadEager(document);
   await loadLazy(document);
+  loadRails();
   loadDelayed();
   loadPrevNextBtn();
 }

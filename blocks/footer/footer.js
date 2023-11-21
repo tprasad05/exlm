@@ -43,9 +43,7 @@ function decorateMenu(footer) {
           if (footerMenuList.classList.contains('footer-item-active')) {
             footerMenuList.classList.remove('footer-item-active');
           } else {
-            const menuList = Array.from(
-              groupDiv.querySelectorAll('.footer-item-list'),
-            );
+            const menuList = Array.from(groupDiv.querySelectorAll('.footer-item-list'));
             menuList.forEach((element) => {
               element.classList.remove('footer-item-active');
             });
@@ -66,13 +64,8 @@ function extractDomain(domain) {
 }
 
 function hideLangSelectionDropdown(e) {
-  const langDropdown = document.querySelector(
-    '.footer .dropdown-menu.dropdown-menu-active',
-  );
-  if (
-    langDropdown &&
-    (!e.target || (e.target && !langDropdown.contains(e.target)))
-  ) {
+  const langDropdown = document.querySelector('.footer .dropdown-menu.dropdown-menu-active');
+  if (langDropdown && (!e.target || (e.target && !langDropdown.contains(e.target)))) {
     langDropdown.classList.remove('dropdown-menu-active');
     document.removeEventListener('click', hideLangSelectionDropdown);
   }
@@ -116,21 +109,21 @@ async function decorateSocial(footer) {
   groupDiv.appendChild(social);
   const elem = footer.children[0];
   elem.insertBefore(groupDiv, elem.children[2]);
-  const socialEl = footer.querySelector('.social');
-  const socialParas = socialEl.querySelectorAll('p');
+  const socialParas = social.querySelectorAll('p');
   const socialFrag = document.createDocumentFragment();
   Array.from(socialParas).forEach((p) => {
     const { textContent } = p;
     const domainName = extractDomain(textContent).toLowerCase();
     const holder = document.createElement('a');
     holder.href = textContent;
+    holder.setAttribute('aria-label', domainName);
     holder.target = '_blank';
     holder.classList.add('footer-social-icon-item-wrapper');
     holder.innerHTML = `<span class="icon icon-${domainName}"></span>`;
     socialFrag.appendChild(holder);
   });
-  socialEl.innerHTML = '';
-  socialEl.appendChild(socialFrag);
+  social.innerHTML = '';
+  social.appendChild(socialFrag);
 }
 
 function decorateBreadcrumb(footer) {
@@ -168,10 +161,7 @@ function decorateCopyrightsMenu() {
     adChoice.target = '_blank';
     adChoice.innerHTML = `<span class="icon icon-adchoices-small"></span> AdChoices`;
   }
-  copyRightWrapper.innerHTML = copyRightWrapper.innerHTML.replaceAll(
-    /\s\/\s/g,
-    '<span class="footer-slash">/</span>',
-  );
+  copyRightWrapper.innerHTML = copyRightWrapper.innerHTML.replaceAll(/\s\/\s/g, '<span class="footer-slash">/</span>');
   if (copyRightWrapper?.firstChild instanceof Text) {
     copyRightWrapper.innerHTML = copyRightWrapper.innerHTML.replace(
       copyRightWrapper.firstChild.textContent,

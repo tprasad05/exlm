@@ -17,7 +17,7 @@ import {
   loadScript,
 } from './lib-franklin.js';
 
-const LCP_BLOCKS = []; // add your LCP blocks to the list
+const LCP_BLOCKS = ['marquee']; // add your LCP blocks to the list
 
 /**
  * Builds hero block and prepends to main in a new section.
@@ -276,6 +276,18 @@ export function createTag(tag, attributes, html) {
     });
   }
   return el;
+}
+
+/**
+ * creates an element from html string
+ * @param {string} html
+ * @returns {HTMLElement}
+ */
+export function htmlToElement(html) {
+  const template = document.createElement('template');
+  const trimmedHtml = html.trim(); // Never return a text node of whitespace as the result
+  template.innerHTML = trimmedHtml;
+  return template.content.firstElementChild;
 }
 
 export function loadPrevNextBtn() {

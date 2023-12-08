@@ -1,10 +1,11 @@
 const browseCardDataModel = {
   contentType: '',
+  badgeTitle: '',
   thumbnail: '',
   product: '',
   title: '',
   description: '',
-  tags: '',
+  tags: [],
   event: {
     startTime: '',
     endTime: '',

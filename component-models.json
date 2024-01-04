@@ -318,7 +318,7 @@
         "valueType": "string",
         "options": [
           {
-            "name": "hyperlink",
+            "name": "default",
             "value": ""
           },
           {
@@ -1274,8 +1274,10 @@
             "value": "descending"
           }
         ]
-      },
-        {
+      }
+    ]
+  },
+  {
     "id": "browse-topics",
     "fields": [
       {
@@ -1294,8 +1296,6 @@
         "rootPath": "/content/cq:tags/exl-encoded",
         "description": "Select up to 15 topics."
       }
-    ]
-  }
     ]
   }
 ]

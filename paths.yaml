@@ -1,12 +1,12 @@
 mappings:
-  - /content/exlm/global/:/
-  - /content/exlm/global/en:/
-  - /content/exlm/metadata:/metadata.json
+  - /content/exlm-tprasad/global/:/
+  - /content/exlm-tprasad/global/en:/
+  - /content/exlm-tprasad/metadata:/metadata.json
   # load fragments as resource from codebus in the editor (sw.js)
-  - /content/exlm.resource/fragments/:/fragments/
+  - /content/exlm-tprasad.resource/fragments/:/fragments/
 
-  - /content/exlm/redirects:/redirects.json
-  - /content/exlm/placeholders:/placeholders.json
+  - /content/exlm-tprasad/redirects:/redirects.json
+  - /content/exlm-tprasad/placeholders:/placeholders.json
 
 includes:
-  - /content/exlm/
+  - /content/exlm-tprasad/

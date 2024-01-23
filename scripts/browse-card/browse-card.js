@@ -1,4 +1,4 @@
-import { loadCSS } from '../lib-franklin.js';
+import { loadCSS, fetchPlaceholders } from '../lib-franklin.js';
 import { createTag, htmlToElement } from '../scripts.js';
 import { CONTENT_TYPES } from './browse-cards-constants.js';
 
@@ -23,13 +23,30 @@ const buildTagsContent = (cardMeta, tags = []) => {
   tags.forEach((tag) => {
     const { icon: iconName, text } = tag;
     if (text) {
-      const anchor = createTag('a', { class: 'browse-card-meta-anchor', title: 'user', href: '#' });
+      const anchor = createTag('div', { class: 'browse-card-meta-anchor' });
       const span = createTag('span', { class: `icon icon-${iconName}` });
       anchor.textContent = text;
       anchor.appendChild(span);
       cardMeta.appendChild(anchor);
     }
   });
+};
+
+let placeholders = {};
+try {
+  placeholders = await fetchPlaceholders();
+} catch (err) {
+  // eslint-disable-next-line no-console
+  console.error('Error fetching placeholders:', err);
+}
+
+// Default No Results Content from Placeholder
+export const buildNoResultsContent = (block) => {
+  loadCSS(`${window.hlx.codeBasePath}/scripts/browse-card/browse-card.css`); // load css dynamically
+  const noResultsInfo = htmlToElement(`
+    <div class="browse-card-no-results">${placeholders.noResultsText}</div>
+  `);
+  block.appendChild(noResultsInfo);
 };
 
 const buildEventContent = ({ event, cardContent, card }) => {
@@ -76,7 +93,6 @@ const buildCardContent = (card, model) => {
   const contentType = type.toLowerCase();
   const cardContent = card.querySelector('.browse-card-content');
   const cardFooter = card.querySelector('.browse-card-footer');
-  const { matches: isDesktopResolution } = window.matchMedia('(min-width: 900px)');
 
   if (description) {
     const stringContent = description.length > 100 ? `${description.substring(0, 100).trim()}...` : description;
@@ -89,15 +105,11 @@ const buildCardContent = (card, model) => {
   const cardMeta = document.createElement('div');
   cardMeta.classList.add('browse-card-meta-info');
 
-  if (contentType === CONTENT_TYPES.COURSE.MAPPING_KEY) {
+  if (contentType === CONTENT_TYPES.COURSE.MAPPING_KEY || contentType === CONTENT_TYPES.COMMUNITY.MAPPING_KEY) {
     buildTagsContent(cardMeta, tags);
   }
-  if (isDesktopResolution) {
-    cardContent.appendChild(cardMeta);
-  } else {
-    const titleEl = card.querySelector('.browse-card-title-text');
-    cardContent.insertBefore(cardMeta, titleEl);
-  }
+
+  cardContent.appendChild(cardMeta);
 
   /* User Info for Community Section - Will accomodate once we have KHOROS integration */
   // if (contentType === CONTENT_TYPES.COMMUNITY.MAPPING_KEY) {
@@ -114,16 +126,16 @@ const buildCardContent = (card, model) => {
   }
   const cardOptions = document.createElement('div');
   cardOptions.classList.add('browse-card-options');
-  if (copyLink) {
-    const copyLinkAnchor = createTag('a', { href: copyLink, title: 'copy' }, `<span class="icon icon-copy"></span>`);
-    cardOptions.appendChild(copyLinkAnchor);
-  }
   if (
     contentType !== CONTENT_TYPES.LIVE_EVENTS.MAPPING_KEY &&
     contentType !== CONTENT_TYPES.INSTRUCTOR_LED_TRANING.MAPPING_KEY
   ) {
     const bookmarkAnchor = createTag('a', { href: '#', title: 'copy' }, `<span class="icon icon-bookmark"></span>`);
     cardOptions.appendChild(bookmarkAnchor);
+  }
+  if (copyLink) {
+    const copyLinkAnchor = createTag('a', { href: copyLink, title: 'copy' }, `<span class="icon icon-copy"></span>`);
+    cardOptions.appendChild(copyLinkAnchor);
   }
   cardFooter.appendChild(cardOptions);
   buildCardCtaContent({ cardFooter, contentType, viewLink, viewLinkText });
@@ -146,7 +158,7 @@ const setupCopyAction = (wrapper) => {
   });
 };
 
-export default async function buildCard(element, model) {
+export async function buildCard(element, model) {
   loadCSS(`${window.hlx.codeBasePath}/scripts/browse-card/browse-card.css`); // load css dynamically
   const { thumbnail, product, title, contentType, badgeTitle } = model;
   const type = contentType?.toLowerCase();

@@ -394,7 +394,7 @@
       {
         "component": "text-input",
         "valueType": "string",
-        "name": "cardLink",
+        "name": "cardLinkUrl",
         "value": "",
         "label": "Link URL",
         "description": "Sets the link URL for Card."
@@ -753,6 +753,185 @@
     ]
   },
   {
+    "id": "sign-up",
+    "fields": [
+      {
+        "component": "reference",
+        "valueType": "string",
+        "name": "fileReference",
+        "label": "Subject Image",
+        "description": "The sign-up subject image, min Xpx x Ypx...",
+        "multi": false
+      },
+      {
+        "component": "text-input",
+        "valueType": "string",
+        "name": "imageAlt",
+        "value": "",
+        "label": "Subject Image Description",
+        "description": "A descriptive text of the image will be shown as tooltip."
+      },
+      {
+        "component": "select",
+        "name": "backgroundColor",
+        "value": "",
+        "label": "Background Color",
+        "description": "The sign-up background color",
+        "valueType": "string",
+        "options": [
+          {
+            "name": "Gray",
+            "value": "--spectrum-gray-700"
+          },
+          {
+            "name": "Blue",
+            "value": "--spectrum-blue-700"
+          },
+          {
+            "name": "Green",
+            "value": "--spectrum-green-700"
+          },
+          {
+            "name": "Orange",
+            "value": "--spectrum-orange-700"
+          },
+          {
+            "name": "Red",
+            "value": "--spectrum-red-700"
+          },
+          {
+            "name": "Celery",
+            "value": "--spectrum-celery-700"
+          },
+          {
+            "name": "Chartreuse",
+            "value": "--spectrum-chartreuse-700"
+          },
+          {
+            "name": "Cyan",
+            "value": "--spectrum-cyan-700"
+          },
+          {
+            "name": "Fuchsia",
+            "value": "--spectrum-fuchsia-700"
+          },
+          {
+            "name": "Indigo",
+            "value": "--spectrum-indigo-700"
+          },
+          {
+            "name": "Magenta",
+            "value": "--spectrum-magenta-700"
+          },
+          {
+            "name": "Purple",
+            "value": "--spectrum-purple-700"
+          },
+          {
+            "name": "Seafoam",
+            "value": "--spectrum-seafoam-700"
+          },
+          {
+            "name": "Yellow",
+            "value": "--spectrum-yellow-700"
+          }
+        ]
+      },
+      {
+        "component": "text-input",
+        "valueType": "string",
+        "name": "eyebrow",
+        "value": "",
+        "label": "Eyebrow",
+        "description": "Sets the small pre-title above the title."
+      },
+      {
+        "component": "text-input",
+        "valueType": "string",
+        "name": "title",
+        "value": "",
+        "label": "Heading",
+        "description": "Sets the main title of the sign-up."
+      },
+      {
+        "component": "text-area",
+        "valueType": "string",
+        "name": "longDescr",
+        "value": "",
+        "label": "Long Description",
+        "description": "The description shown in Desktop and Tablet view."
+      },
+      {
+        "component": "select",
+        "name": "cta1Type",
+        "value": "primary",
+        "label": "First CTA Type",
+        "description": "'Primary' will render button filled, 'Secondary' with an outline.",
+        "valueType": "string",
+        "options": [
+          {
+            "name": "Primary",
+            "value": "primary"
+          },
+          {
+            "name": "Secondary",
+            "value": "secondary"
+          }
+        ]
+      },
+      {
+        "component": "text-input",
+        "valueType": "string",
+        "name": "cta1Text",
+        "value": "",
+        "label": "First CTA Text",
+        "description": "Text to be shown inside button."
+      },
+      {
+        "component": "text-input",
+        "valueType": "string",
+        "name": "cta1Url",
+        "value": "",
+        "label": "First CTA Link",
+        "description": "What link to open when clicking the button."
+      },
+      {
+        "component": "select",
+        "name": "cta2Type",
+        "value": "primary",
+        "label": "Second CTA Type",
+        "description": "'Primary' will render button filled, 'Secondary' with an outline.",
+        "valueType": "string",
+        "options": [
+          {
+            "name": "Primary",
+            "value": ""
+          },
+          {
+            "name": "Secondary",
+            "value": "secondary"
+          }
+        ]
+      },
+      {
+        "component": "text-input",
+        "valueType": "string",
+        "name": "cta2Text",
+        "value": "",
+        "label": "Second CTA Text",
+        "description": "Text to be shown inside button."
+      },
+      {
+        "component": "text-input",
+        "valueType": "string",
+        "name": "cta2Url",
+        "value": "",
+        "label": "Second CTA Link",
+        "description": "What link to open when clicking the button."
+      }
+    ]
+  },
+  {
     "id": "video-embed",
     "fields": [
       {
@@ -994,14 +1173,15 @@
         "name": "heading",
         "value": "",
         "label": "Heading",
-        "description": "Sets the heading for Browse Filters."
+        "description": "Sets the heading for topics."
       },
       {
-        "component": "text-area",
+        "component": "aem-tag",
+        "name": "cq:tags",
+        "label": "Topics & Features",
         "valueType": "string",
-        "name": "description",
-        "value": "",
-        "label": "Sets the description for Browse Filters"
+        "rootPath": "/content/cq:tags/exl",
+        "description": "Select up to 15 topics."
       }
     ]
   },
@@ -1278,7 +1458,7 @@
     ]
   },
   {
-    "id": "browse-topics",
+    "id": "tabbed-cards",
     "fields": [
       {
         "component": "text-input",
@@ -1289,12 +1469,89 @@
         "description": "Sets the heading."
       },
       {
-        "component": "aem-tag",
-        "name": "cq:tags",
-        "label": "Topics & Features",
+        "component": "text-input",
         "valueType": "string",
-        "rootPath": "/content/cq:tags/exl-encoded",
-        "description": "Select up to 15 topics."
+        "name": "tooltip",
+        "value": "",
+        "label": "Tooltip",
+        "description": "Sets the tooltip."
+      },
+      {
+        "component": "multiselect",
+        "valueType": "string",
+        "name": "contentTypes",
+        "label": "Filter by Content Type",
+        "description": "Select the content type(s).",
+        "options": [
+          {
+            "name": "Courses",
+            "value": "course"
+          },
+          {
+            "name": "Tutorials",
+            "value": "tutorial"
+          },
+          {
+            "name": "Documentation",
+            "value": "documentation"
+          },
+          {
+            "name": "Troubleshooting",
+            "value": "troubleshooting"
+          },
+          {
+            "name": "On-Demand Events",
+            "value": "event"
+          },
+          {
+            "name": "Community Posts",
+            "value": "community"
+          },
+          {
+            "name": "Certification",
+            "value": "certification"
+          }
+        ]
+      },
+      {
+        "component": "radio-group",
+        "name": "sortBy",
+        "value": "most_recent",
+        "label": "Sort by",
+        "valueType": "string",
+        "options": [
+          {
+            "name": "Most Recent",
+            "value": "most_recent"
+          },
+          {
+            "name": "Most Popular",
+            "value": "most_popular"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tabs",
+    "fields": []
+  },
+  {
+    "id": "tab",
+    "fields": [
+      {
+        "component": "text-input",
+        "valueType": "string",
+        "name": "title",
+        "value": "",
+        "label": "Heading"
+      },
+      {
+        "component": "text-area",
+        "valueType": "string",
+        "name": "content",
+        "value": "",
+        "label": "Body"
       }
     ]
   }

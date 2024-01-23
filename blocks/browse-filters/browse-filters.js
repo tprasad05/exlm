@@ -1,4 +1,4 @@
-import { decorateIcons, getMetadata } from '../../scripts/lib-franklin.js';
+import { decorateIcons, getMetadata, fetchPlaceholders } from '../../scripts/lib-franklin.js';
 import { createTag, htmlToElement, debounce } from '../../scripts/scripts.js';
 import {
   roleOptions,
@@ -10,7 +10,9 @@ import {
 } from './browse-filter-utils.js';
 import initiateCoveoHeadlessSearch, { fragment } from '../../scripts/coveo-headless/index.js';
 import BrowseCardsCoveoDataAdaptor from '../../scripts/browse-card/browse-cards-coveo-data-adaptor.js';
-import buildCard from '../../scripts/browse-card/browse-card.js';
+import { buildCard } from '../../scripts/browse-card/browse-card.js';
+import BuildPlaceholder from '../../scripts/browse-card/browse-card-placeholder.js';
+import { formattedTopicsTags, handleTopicSelection } from './browse-topics.js';
 
 const coveoFacetMap = {
   Role: 'headlessRoleFacet',
@@ -23,12 +25,22 @@ const coveoFacetFilterNameMap = {
   el_role: 'Role',
   el_level: 'Experience Level',
 };
+const CLASS_BROWSE_FILTER_FORM = '.browse-filters-form';
+
+let placeholders = {};
+try {
+  placeholders = await fetchPlaceholders();
+} catch (err) {
+  // eslint-disable-next-line no-console
+  console.error('Error fetching placeholders:', err);
+}
 
 const theme = getMetadata('theme').trim();
 const isBrowseProdPage = theme === 'browse-product';
 const dropdownOptions = [roleOptions, contentTypeOptions];
 const tags = [];
 let tagsProxy;
+const buildCardsShimmer = new BuildPlaceholder();
 
 function enableTagsAsProxy(block) {
   tagsProxy = new Proxy(tags, {
@@ -53,10 +65,23 @@ function hideSectionsBelowFilter(block, show) {
   if (parent) {
     const siblings = Array.from(parent.parentNode.children);
     const clickedIndex = siblings.indexOf(parent);
-
     // eslint-disable-next-line no-plusplus
     for (let i = clickedIndex + 1; i < siblings.length; i++) {
-      siblings[i].style.display = show ? 'block' : 'none';
+      if (!siblings[i].classList.contains('browse-rail')) {
+        siblings[i].style.display = show ? 'block' : 'none';
+      }
+    }
+  }
+}
+
+function hildeSectionsWithinFilter(block, show) {
+  const siblings = Array.from(block.children);
+
+  // eslint-disable-next-line no-plusplus
+  for (let i = 1; i < siblings.length; i++) {
+    if (!siblings[i].classList.contains('browse-topics')) {
+      const classOp = show ? 'remove' : 'add';
+      siblings[i].classList?.[classOp]('browse-hide-section');
     }
   }
 }
@@ -64,12 +89,21 @@ function hideSectionsBelowFilter(block, show) {
 function updateClearFilterStatus(block) {
   const searchEl = block.querySelector('.filter-input-search > input[type="search"]');
   const clearFilterBtn = block.querySelector('.browse-filters-clear');
-  if (tagsProxy.length !== 0 || searchEl.value) {
+  const selectedTopics = Array.from(block.querySelectorAll('.browse-topics-item-active')).reduce((acc, curr) => {
+    const id = curr.dataset.topicname;
+    acc.push(id);
+    return acc;
+  }, []);
+  const hasActiveTopics = block.querySelector('.browse-topics') !== null && selectedTopics.length > 0;
+  const browseFiltersSection = document.querySelector('.browse-filters-form');
+  if (hasActiveTopics || tagsProxy.length !== 0 || searchEl.value) {
     clearFilterBtn.disabled = false;
     hideSectionsBelowFilter(block, false);
+    hildeSectionsWithinFilter(browseFiltersSection, true);
   } else {
     clearFilterBtn.disabled = true;
     hideSectionsBelowFilter(block, true);
+    hildeSectionsWithinFilter(browseFiltersSection, false);
   }
 }
 
@@ -90,7 +124,7 @@ if (isBrowseProdPage) dropdownOptions.push(expTypeOptions);
 function generateCheckboxItem(item, index, id) {
   return `
       <div class="custom-checkbox">
-          <input type="checkbox" id="option${id}${index + 1}" value="${item.title}">
+          <input type="checkbox" id="option${id}${index + 1}" value="${item.value}" data-label="${item.title}">
           <label for="option${id}${index + 1}">
               <span class="title">${item.title}</span>
               <span class="description">${item.description}</span>
@@ -129,10 +163,10 @@ function renderTags() {
 
   function renderTag(tag) {
     tagEl += `
-      <button class="browse-tags">
+      <button class="browse-tags" value="${tag.value}">
         <span>${tag.name}</span>
         <span>: </span>
-        <span>${tag.value}</span>
+        <span>${tag.label}</span>
         <span class="icon icon-close"></span>
       </button>
     `;
@@ -146,10 +180,10 @@ function renderTags() {
 function appendTag(block, tag) {
   const tagsContainer = block.querySelector('.browse-tags-container');
   const tagEl = htmlToElement(`
-    <button class="browse-tags">
+    <button class="browse-tags" value="${tag.value}">
       <span>${tag.name}</span>
       <span>: </span>
-      <span>${tag.value}</span>
+      <span>${tag.label}</span>
       <span class="icon icon-close"></span>
     </button>
   `);
@@ -164,7 +198,7 @@ function appendTag(block, tag) {
 function removeFromTags(block, value) {
   const tagsContainer = block.querySelector('.browse-tags-container');
   [...tagsContainer.children].forEach((tag) => {
-    if (tag.textContent.includes(value)) {
+    if (tag.value === value) {
       tag.remove();
       const itemToRemove = tagsProxy.findIndex((obj) => obj.value === value);
       if (itemToRemove !== -1) {
@@ -202,7 +236,7 @@ function handleTagsClick(block) {
     const isTag = event.target.closest('.browse-tags');
     if (isTag) {
       const name = isTag.querySelector('span:nth-child(1)').textContent.trim();
-      const value = isTag.querySelector('span:nth-child(3)').textContent.trim();
+      const { value } = isTag;
       const coveoFacetKey = coveoFacetMap[name];
       const coveoFacet = window[coveoFacetKey];
       if (coveoFacet) {
@@ -225,22 +259,20 @@ function handleCheckboxClick(block, el, options) {
   // Function to handle checkbox state changes
   function handleCheckboxChange(event) {
     const checkbox = event.target;
-    const label = checkbox.closest('.custom-checkbox').querySelector('label');
     const name = checkbox.closest('.filter-dropdown').dataset.filterType;
-    const isChecked = checkbox.checked;
+    const label = checkbox?.dataset.label || '';
+    const { checked: isChecked, value } = checkbox;
     const coveoFacetKey = coveoFacetMap[name];
     const coveoFacet = window[coveoFacetKey];
     if (isChecked) {
       options.selected += 1;
       appendTag(block, {
         name,
-        value: checkbox.value,
+        label,
+        value,
       });
 
       if (coveoFacet) {
-        const value = label.querySelector('.title')?.textContent;
-        // eslint-disable-next-line no-console
-        console.log(`Checkbox is checked:`, value);
         coveoFacet.toggleSelect({
           state: 'selected',
           value,
@@ -248,12 +280,9 @@ function handleCheckboxClick(block, el, options) {
       }
     } else {
       options.selected -= 1;
-      removeFromTags(block, checkbox.value);
+      removeFromTags(block, label);
 
       if (coveoFacet) {
-        const value = label.querySelector('.title')?.textContent;
-        // eslint-disable-next-line no-console
-        console.log(`Checkbox is unchecked:`, value);
         coveoFacet.toggleSelect({
           state: 'idle',
           value,
@@ -357,7 +386,23 @@ function clearSelectedFilters(block) {
   clearAllSelectedTag(block);
   clearSearchQuery(block);
   updateClearFilterStatus(block);
-  window.location.hash = '';
+  const hash = window.location.hash.substr(1); // Remove the '#' character
+  let params = new URLSearchParams(hash);
+
+  // Get the value of 'aq'
+  const aqValue = params.get('aq');
+
+  // Clear all parameters
+  params = new URLSearchParams();
+
+  // Set only 'aq' with its value if it was present
+  if (aqValue !== null) {
+    params.set('aq', aqValue);
+  }
+
+  // Set the modified hash back to the URL
+  window.location.hash = params.toString();
+  // window.location.hash = '';
 }
 
 function handleClearFilter(block) {
@@ -406,19 +451,6 @@ function handleDropdownToggle() {
   });
 }
 
-function decorateBlockTitle(block) {
-  const firstChild = block.querySelector('div:first-child');
-  const firstChildText = firstChild.querySelector('div > div').textContent;
-  const headingEl = createTag('h1', { class: 'browse-filters-title' }, firstChildText);
-
-  const secondChild = block.querySelector('div:nth-child(2)');
-  const secondChildText = secondChild.querySelector('div > div').textContent;
-  const pEl = createTag('p', { class: 'browse-filters-description' }, secondChildText);
-
-  firstChild.parentNode.replaceChild(headingEl, firstChild);
-  secondChild.parentNode.replaceChild(pEl, secondChild);
-}
-
 function handleUriHash() {
   const hash = fragment();
   const browseFiltersSection = document.querySelector('.browse-filters-form');
@@ -448,9 +480,12 @@ function handleUriHash() {
       if (filterOptionEl) {
         facetValues.forEach((facetValue) => {
           const inputEl = filterOptionEl.querySelector(`input[value="${facetValue}"]`);
+          const label = inputEl?.dataset.label || '';
+
           inputEl.checked = true;
           appendTag(browseFiltersSection, {
             name: keyName,
+            label,
             value: facetValue,
           });
         });
@@ -595,6 +630,7 @@ function handleCoveoHeadlessSearch(
   block,
   { submitSearchHandler, searchInputKeyupHandler, searchInputKeydownHandler, searchInputEventHandler },
 ) {
+  buildCardsShimmer.remove();
   const filterResultsEl = createTag('div', { class: 'browse-filters-results' });
 
   const browseFiltersSection = block.querySelector('.browse-filters-form');
@@ -629,6 +665,12 @@ function handleCoveoHeadlessSearch(
 
 async function handleSearchEngineSubscription() {
   const filterResultsEl = document.querySelector('.browse-filters-results');
+  const browseFilterForm = document.querySelector(CLASS_BROWSE_FILTER_FORM);
+  buildCardsShimmer.add(browseFilterForm);
+  browseFilterForm.insertBefore(
+    document.querySelector('.shimmer-placeholder'),
+    browseFilterForm.childNodes[document.querySelector('.browse-topics') ? 4 : 3],
+  );
   if (!filterResultsEl || window.headlessStatusControllers?.state?.isLoading) {
     return;
   }
@@ -636,6 +678,7 @@ async function handleSearchEngineSubscription() {
   const search = window.headlessSearchEngine.state.search;
   const { results } = search;
   if (results.length > 0) {
+    buildCardsShimmer.remove();
     const cardsData = await BrowseCardsCoveoDataAdaptor.mapResultsToCardsData(results);
     filterResultsEl.innerHTML = '';
     cardsData.forEach((cardData) => {
@@ -643,10 +686,14 @@ async function handleSearchEngineSubscription() {
       buildCard(cardDiv, cardData);
       filterResultsEl.appendChild(cardDiv);
       document.querySelector('.browse-filters-form').classList.add('is-result');
+      filterResultsEl.classList.remove('no-results');
+      decorateIcons(cardDiv);
     });
   } else {
-    filterResultsEl.innerHTML = 'No results';
+    buildCardsShimmer.remove();
+    filterResultsEl.innerHTML = placeholders.noResultsTextBrowse || 'No Results';
     document.querySelector('.browse-filters-form').classList.remove('is-result');
+    filterResultsEl.classList.add('no-results');
   }
 }
 
@@ -683,9 +730,83 @@ function renderSortContainer(block) {
   }
 }
 
-export default function decorate(block) {
+function decorateBrowseTopics(block) {
+  const firstChild = block.querySelector('div:first-child');
+  const secondChild = block.querySelector('div:nth-child(2)');
+  const headingElement = block.querySelector('div:nth-child(1) > div');
+  const topics = block.querySelector('div:nth-child(2) > div').textContent.trim();
+  const allTopicsTags = topics !== '' ? formattedTopicsTags(topics) : '';
+  const div = document.createElement('div');
+  div.classList.add('browse-topics');
+
+  const headerDiv = htmlToElement(`
+    <div class="browse-topics-block-header">
+      <div class="browse-topics-block-title">
+          <h2>${headingElement?.textContent.trim()}</h2>
+      </div>
+    </div>
+  `);
+
+  const contentDiv = document.createElement('div');
+  contentDiv.classList.add('browse-topics-block-content');
+  const browseFiltersSection = document.querySelector('.browse-filters-form');
+
+  if (allTopicsTags.length > 0) {
+    allTopicsTags
+      .filter((value) => value !== undefined)
+      .forEach((topicsButtonTitle) => {
+        const topicName = atob(topicsButtonTitle);
+        const topicsButtonDiv = createTag('button', { class: 'browse-topics browse-topics-item' });
+        topicsButtonDiv.dataset.topicname = topicName;
+        topicsButtonDiv.innerHTML = topicName;
+        contentDiv.appendChild(topicsButtonDiv);
+      });
+
+    contentDiv.addEventListener('click', (e) => {
+      if (e.target?.classList?.contains('browse-topics-item')) {
+        if (e.target.classList.contains('browse-topics-item-active')) {
+          e.target.classList.remove('browse-topics-item-active');
+        } else {
+          e.target.classList.add('browse-topics-item-active');
+        }
+        updateClearFilterStatus(browseFiltersSection);
+        handleTopicSelection(contentDiv);
+      }
+    });
+    const decodedHash = decodeURIComponent(window.location.hash);
+    const filtersInfo = decodedHash.split('&').find((s) => s.includes('@el_features'));
+    if (filtersInfo) {
+      let selectedTopics;
+      const [, multipleFeaturesCheck] = filtersInfo.match(/@el_features==\(([^)]+)/) || [];
+      let topicsString = multipleFeaturesCheck;
+      if (!topicsString) {
+        const [, singleFeatureCheck] = filtersInfo.match(/@el_features=("[^"]*")/) || [];
+        topicsString = singleFeatureCheck;
+      }
+      if (topicsString) {
+        selectedTopics = topicsString.split(',').map((s) => s.trim().replace(/"/g, ''));
+      }
+      if (selectedTopics && selectedTopics.length > 0) {
+        selectedTopics.forEach((topic) => {
+          const element = contentDiv.querySelector(`.browse-topics-item[data-topicname="${topic}"]`);
+          element.classList.add('browse-topics-item-active');
+        });
+        handleTopicSelection(contentDiv);
+      }
+    }
+
+    firstChild.parentNode.replaceChild(headerDiv, firstChild);
+    secondChild.parentNode.replaceChild(contentDiv, secondChild);
+    div.append(headerDiv);
+    div.append(contentDiv);
+    /* Append browse topics right above the filters section */
+    const filtersFormEl = document.querySelector('.browse-filters-form');
+    filtersFormEl.insertBefore(div, filtersFormEl.children[4]);
+  }
+}
+
+export default async function decorate(block) {
   enableTagsAsProxy(block);
-  decorateBlockTitle(block);
   appendFormEl(block);
   constructFilterInputContainer(block);
   addLabel(block);
@@ -696,6 +817,7 @@ export default function decorate(block) {
   constructClearFilterBtn(block);
   appendToForm(block, renderTags());
   appendToForm(block, renderFilterResultsHeader());
+  decorateBrowseTopics(block);
   initiateCoveoHeadlessSearch({
     handleSearchEngineSubscription,
     renderPageNumbers,

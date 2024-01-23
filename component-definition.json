@@ -8,7 +8,7 @@
           "title": "Text",
           "id": "text",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/text/v1/text",
                 "template": {
@@ -22,7 +22,7 @@
           "title": "Title",
           "id": "title",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/title/v1/title",
                 "template": {}
@@ -34,7 +34,7 @@
           "title": "Image",
           "id": "image",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/image/v1/image",
                 "template": {
@@ -48,7 +48,7 @@
           "title": "Button",
           "id": "button",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/button/v1/button",
                 "template": {}
@@ -66,7 +66,7 @@
           "title": "Section",
           "id": "section",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/section/v1/section",
                 "template": {
@@ -88,11 +88,11 @@
           "title": "Icon Block",
           "id": "icon-block",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
-                  "allowedComponents": "icon-block",
+                  "filter": "icon-block",
                   "name": "Icon Block",
                   "item1": {
                     "sling:resourceType": "core/franklin/components/block/v1/block/item",
@@ -102,7 +102,7 @@
                     "cardHeading": "Default Heading",
                     "cardDescription": "Default description",
                     "cardLinkText": "Default Link Text",
-                    "cardLink": "/content/exlm/global/en"
+                    "cardLinkUrl": "/content/exlm/global/en"
                   },
                   "item2": {
                     "sling:resourceType": "core/franklin/components/block/v1/block/item",
@@ -112,7 +112,7 @@
                     "cardHeading": "Default Heading",
                     "cardDescription": "Default description",
                     "cardLinkText": "Default Link Text",
-                    "cardLink": "/content/exlm/global/en"
+                    "cardLinkUrl": "/content/exlm/global/en"
                   },
                   "item3": {
                     "sling:resourceType": "core/franklin/components/block/v1/block/item",
@@ -122,7 +122,7 @@
                     "cardHeading": "Default Heading",
                     "cardDescription": "Default description",
                     "cardLinkText": "Default Link Text",
-                    "cardLink": "/content/exlm/global/en"
+                    "cardLinkUrl": "/content/exlm/global/en"
                   }
                 }
               }
@@ -133,12 +133,16 @@
           "title": "Icon Card",
           "id": "icon-card",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block/item",
                 "template": {
                   "name": "Icon Card",
                   "model": "icon-card",
+                  "cardHeading": "Default Heading",
+                  "cardDescription": "Default description",
+                  "cardLinkText": "Default Link Text",
+                  "cardLinkUrl": "/content/exlm/global/en",
                   "cardIcon": "/content/dam/exlm/icons/S_ExperienceManager_24_N.svg"
                 }
               }
@@ -149,12 +153,10 @@
           "title": "Columns",
           "id": "columns",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/columns/v1/columns",
-                "template": {
-                  "allowedComponents": ["group:default"]
-                }
+                "template": {}
               }
             }
           }
@@ -163,7 +165,7 @@
           "title": "Curated Cards",
           "id": "curated-cards",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
@@ -178,7 +180,7 @@
           "title": "Teaser",
           "id": "teaser",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
@@ -197,7 +199,7 @@
           "title": "Marquee",
           "id": "marquee",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
@@ -212,16 +214,34 @@
           }
         },
         {
+          "title": "Sign up",
+          "id": "sign-up",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Sign up",
+                  "model": "sign-up",
+                  "fileReference": "/content/dam/exlm/Community_headshot_single.png",
+                  "title": "Sign up Title",
+                  "longDescr": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt"
+                }
+              }
+            }
+          }
+        },
+        {
           "title": "Carousel",
           "id": "carousel",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
                   "name": "Carousel",
                   "model": "carousel",
-                  "allowedComponents": "teaser",
+                  "filter": "teaser",
                   "classes": "center",
                   "teaser": {
                     "name": "Teaser",
@@ -240,7 +260,7 @@
           "title": "Video Embed",
           "id": "video-embed",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
@@ -255,7 +275,7 @@
           "title": "Secondary Search",
           "id": "secondary-search",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
@@ -270,13 +290,13 @@
           "title": "Accordion Group",
           "id": "accordion-group",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
                   "name": "Accordion Group",
                   "model": "accordion-group",
-                  "allowedComponents": "accordion",
+                  "filter": "accordion",
                   "item": {
                     "sling:resourceType": "core/franklin/components/block/v1/block/item",
                     "name": "Accordion",
@@ -293,7 +313,7 @@
           "title": "Accordion",
           "id": "accordion",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block/item",
                 "template": {
@@ -310,7 +330,7 @@
           "title": "Media",
           "id": "media",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
@@ -329,11 +349,11 @@
           "title": "Authorable Card",
           "id": "authorable-card",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
-                  "allowedComponents": "authorable-card",
+                  "filter": "authorable-card",
                   "name": "Authorable Card",
                   "model": "authorable-card",
                   "item1": {
@@ -365,7 +385,7 @@
           "title": "Authored Card",
           "id": "authored-card",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block/item",
                 "template": {
@@ -380,7 +400,7 @@
           "title": "Browse Filters",
           "id": "browse-filters",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
@@ -395,7 +415,7 @@
           "title": "Featured Cards",
           "id": "featured-cards",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
@@ -414,7 +434,7 @@
           "title": "Events Cards",
           "id": "events-cards",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
@@ -429,7 +449,7 @@
           "title": "ADLS Cards",
           "id": "adls-cards",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
@@ -441,15 +461,55 @@
           }
         },
         {
-          "title": "Browse Topics",
-          "id": "browse-topics",
+          "title": "Tabbed Cards",
+          "id": "tabbed-cards",
           "plugins": {
-            "aem": {
+            "xwalk": {
               "page": {
                 "resourceType": "core/franklin/components/block/v1/block",
                 "template": {
-                  "name": "Browse Topics",
-                  "model": "browse-topics"
+                  "name": "Tabbed Cards",
+                  "model": "tabbed-cards"
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Tabs",
+          "id": "tabs",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block",
+                "template": {
+                  "name": "Tabs",
+                  "model": "tabs",
+                  "filter": "tab",
+                  "item1": {
+                    "sling:resourceType": "core/franklin/components/block/v1/block/item",
+                    "name": "Tab",
+                    "model": "tab",
+                    "title": "Tab",
+                    "content": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "Tab",
+          "id": "tab",
+          "plugins": {
+            "xwalk": {
+              "page": {
+                "resourceType": "core/franklin/components/block/v1/block/item",
+                "template": {
+                  "name": "Tab",
+                  "model": "tab",
+                  "title": "Tab",
+                  "content": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
                 }
               }
             }

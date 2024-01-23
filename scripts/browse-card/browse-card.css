@@ -133,7 +133,6 @@
 .browse-card .icon {
   color: var( --non-spectrum-dim-gray);
   fill: var( --non-spectrum-dim-gray);
-  cursor: pointer;
   margin-right: 2px;
   height: 24px;
   width: 24px;
@@ -276,4 +275,15 @@
   .browse-card.course-card .browse-card-meta-info, .browse-card.course-card .browse-card-title-text {
     margin: 8px 0;
   }
+}
+.browse-card-no-results {
+  background: var(--spectrum-gray-200);
+  border-radius: 4px;
+  color: var(--non-spectrum-grey);
+  font-size: var(--spectrum-font-size-200);
+  line-height: 21px;
+  letter-spacing: normal;
+  padding: 74px 0;
+  text-align: center;
+  margin-top: 24px;
 }

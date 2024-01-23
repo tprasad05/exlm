@@ -1289,7 +1289,7 @@
       {
         "component": "text-input",
         "valueType": "string",
-        "name": "link",
+        "name": "LinkUrl",
         "value": "",
         "label": "Link URL",
         "description": "Sets the text url."

@@ -1287,9 +1287,9 @@
         "description": "Sets the text for link."
       },
       {
-        "component": "text-input",
+        "component": "aem-content",
         "valueType": "string",
-        "name": "LinkUrl",
+        "name": "linkUrl",
         "value": "",
         "label": "Link URL",
         "description": "Sets the text url."

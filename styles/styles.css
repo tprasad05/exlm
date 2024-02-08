@@ -139,6 +139,7 @@ strong {
   --text-color: #000;
   --footer-background-color: #fafafa;
   --footer-border-color: #e1e1e1;
+  --box-back-drop-shadow: rgba(0 0 0 / 15%);
   /* Placeholder */
   --shimmer-image-slide-start: #ececec;
   --shimmer-image-slide-mid: #ddd;
@@ -385,15 +386,23 @@ strong {
   --spectrum-yellow-1300: #362500;
   --spectrum-global-color-gray-900-rgb: 0, 0, 0;
   /* spectrum spacing */
+  --spectrum-spacing-50: 2px;
+  --spectrum-spacing-75: 4px;
+  --spectrum-spacing-100: 8px;
+  --spectrum-spacing-200: 12px;
+  --spectrum-spacing-300: 16px;
   --spectrum-spacing-400: 24px;
   --spectrum-spacing-500: 32px;
   --spectrum-spacing-600: 40px;
   --spectrum-spacing-700: 48px;
+  --spectrum-spacing-800: 64px;
+  --spectrum-spacing-900: 80px;
+  --spectrum-spacing-1000: 96px;
   /* mini toc spectrum vars */
   --spectrum-sidenav-item-background-color-hover: ButtonFace;
   --spectrum-alias-highlight-hover: rgb(0 0 0 / 6%);
   --spectrum-sidenav-item-text-color-hover: ButtonText;
-  --spectrum-alias-text-color-hover: var(--spectrum-global-color-gray-900);
+  --spectrum-alias-text-color-hover: rgb(var(--spectrum-global-color-gray-900-rgb));
   /* Non-Spectrum custom colors */
   --non-spectrum-grey-100: #f9f9f9;
   --non-spectrum-grey-333: #333;
@@ -473,6 +482,23 @@ strong {
   --exlm-line-height-h5: 20.8px;
   --exlm-line-height-h6: 20.8px;
   --exlm-line-height-content: var(--spectrum-line-height-l);
+  /* exlm defaultsolution colors */
+  --exlm-toc-solution-1: #864ccc;
+  --exlm-toc-solution-2: #fa0f00;
+  --exlm-toc-solution-3: #5c5ce0;
+  --exlm-toc-solution-4: #505050;
+  --exlm-toc-solution-5: #7cc33f;
+  --exlm-toc-solution-6: #d73320;
+  --exlm-toc-solution-7: #3da74e;
+  --exlm-toc-solution-8: #d83790;
+  --exlm-toc-solution-9: #b130bd;
+  --exlm-toc-solution-10: #ff1828;
+  --exlm-toc-solution-11: #16878c;
+  --exlm-toc-solution-12: #16868b;
+  --exlm-toc-solution-13: #6e6e6e;
+  --exlm-toc-solution-14: #3da64e;
+  --exlm-toc-solution-15: #584ccc;
+  --exlm-toc-solution-16: #000b1d;
 }
 
 @media (min-width: 1200px) {
@@ -800,7 +826,7 @@ main > div.browse-rail {
   main > div.section.browse-rail {
     display: initial;
     grid-column: 1;
-    grid-row: 1/infinite;
+    grid-row: 1/100;
     width: 224px;
     height: 100%;
     padding: 0 0 0 32px;
@@ -898,83 +924,198 @@ main > div.browse-rail {
 }
 .docs main {
   width: 100%;
-  display: flex;
-  flex-direction: column;
+  display: grid;
   margin: 0 auto;
   padding: 0 46px;
   box-sizing: border-box;
   max-width: 1700px;
 }
-.docs main > div {
-  padding: 30px var(--spectrum-spacing-500) var(--spectrum-spacing-500) var(--spectrum-spacing-500);
-  box-sizing: border-box;
+@media (min-width: 900px) {
+  .docs main {
+    grid-template-columns: 1fr 3fr 1fr;
+    grid-template-rows: repeat(var(--content-sections-count), max-content);
+    padding: 0;
+  }
+  .docs main.rail-left-closed {
+    grid-template-columns: 0 4fr 1fr;
+  }
+  .docs main.rail-right-closed {
+    grid-template-columns: 1fr 4fr 0;
+  }
+  .docs main.rail-left-closed.rail-right-closed {
+    grid-template-columns: 0 5fr 0;
+  }
 }
 .docs main > div.section {
   padding: 30px 2px;
+  box-sizing: border-box;
+  width: 100%;
 }
 @media (min-width: 600px) {
   .docs main > div.section {
     padding: 30px 32px 32px;
   }
 }
-.docs main > div:first-child {
-  order: 2;
-  width: 100%;
-  box-sizing: border-box;
-}
-.docs main > div:nth-child(2) {
-  order: 1;
-  height: 70px;
+.docs main > div.section.toc-container {
+  grid-row: 1/1;
+  min-height: 70px;
   padding: 32px 10px 10px;
 }
-.docs main > div:nth-child(2) .rail-content {
-  display: none;
+.docs main > div.section.toc-container .rail-content {
+  display: block;
 }
-.docs main > div:last-child {
-  order: 3;
+.docs main > div.section.toc-container .toc {
+  visibility: hidden;
+}
+.docs main > div.section.mini-toc-container {
   padding: 32px 10px 0 0;
 }
 @media (min-width: 600px) {
-  .docs main > .div:nth-child(1) {
-    position: relative;
-    padding: 0;
-    text-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .docs main > div:last-child {
+  .docs main > div.section.mini-toc-container {
     padding: 32px 10px 10px 0;
   }
 }
 @media (min-width: 900px) {
-  .docs main {
-    flex-direction: row;
-    padding: 0;
+  .docs main > div.section {
+    border-right: 1px solid #eaeaea;
   }
-  .docs main > div:first-child {
-    order: 2;
+  .docs main > div.section:not(.toc-container, .mini-toc-container) {
     overflow: auto;
-    flex: 1 1 0;
-    padding: 54px 37px 50px 50px;
+    padding-block: 0;
+    padding-inline: 37px 50px;
+    grid-column: 2;
   }
-  .docs main > div:nth-child(2) {
-    order: 1;
-    width: 20%;
+  .docs main > div.section:not(.toc-container, .mini-toc-container).content-section-first {
+    padding-block-start: 54px;
+  }
+  .docs main > div.section:not(.toc-container, .mini-toc-container).content-section-last {
+    padding-block-end: 50px;
+  }
+  .docs main > div.section.toc-container {
+    grid-column: 1/1;
+    grid-row: 1/-1;
     padding: 46px 10px 10px;
   }
-  .docs main > div:nth-child(2) .rail-content {
-    display: block;
-  }
-  .docs main > div:last-child {
-    order: 3;
-    width: 20%;
+  .docs main > div.section.mini-toc-container {
+    grid-column: 3/3;
+    grid-row: 1/-1;
     position: relative;
-    display: block;
+    display: flex;
     gap: 8px;
     padding: 46px 10px 10px 0;
   }
-  .docs main > div:last-child.mini-toc-container {
-    display: flex;
+}
+.docs.docs-landing main {
+  margin: 0 12px;
+  padding-top: 24px;
+  width: auto;
+}
+@media (min-width: 600px) {
+  .docs.docs-landing main {
+    padding: 28px 68px 48px 80px;
+    margin: 0 4rem;
+  }
+}
+@media (min-width: 900px) {
+  .docs.docs-landing main {
+    padding: 42px 0 48px 70px;
+    margin: 0 4rem;
+  }
+}
+.docs.docs-solution-landing main {
+  padding: 0 58px;
+}
+.docs.docs-solution-landing main .default-content-wrapper {
+  margin: 0;
+  width: 100%;
+}
+.docs.docs-solution-landing main .default-content-wrapper h1 {
+  font-size: 44px;
+  /* This font is not avaliable in spectrum so we are hardcoding it */
+  line-height: var(--spectrum-line-height-xxxl);
+  margin-top: 0;
+}
+.docs.docs-solution-landing main .default-content-wrapper h2 {
+  font-size: 24px;
+  border-bottom: 3px solid var(--non-spectrum-grey);
+  margin-bottom: 8px;
+}
+.docs.docs-solution-landing main .default-content-wrapper h3 {
+  font-size: var(--spectrum-font-size-100);
+  margin-top: 40px;
+  margin-bottom: 16px;
+}
+.docs.docs-solution-landing main .default-content-wrapper ul {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  width: 100%;
+}
+.docs.docs-solution-landing main .default-content-wrapper ul li {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: var(--spectrum-font-size-200);
+  color: var(--spectrum-gray-800);
+}
+.docs.docs-solution-landing main .default-content-wrapper ul li a {
+  color: var(--non-spectrum-link-blue);
+}
+.docs.docs-solution-landing main .default-content-wrapper ul li a:hover {
+  color: var(--non-spectrum-custom-dark);
+}
+.docs.docs-solution-landing main .section > div.default-content-wrapper {
+  max-width: 100%;
+}
+.docs.docs-solution-landing main .section > div.breadcrumbs-wrapper {
+  margin-left: 0;
+}
+.docs.docs-solution-landing main > div:first-child {
+  border: none;
+  gap: 0;
+}
+@media (min-width: 900px) {
+  .docs.docs-solution-landing main {
+    padding: 0;
+  }
+  .docs.docs-solution-landing main > div:first-child {
+    margin: 0 56px;
+    padding: 54px 47px 50px 60px;
+    border: none;
+  }
+}
+.docs.docs-solution-landing.docs-tutorial .default-content-wrapper h2 {
+  font-size: 24px;
+  border-bottom: 3px solid var(--non-spectrum-grey);
+  margin-bottom: 12px;
+}
+.docs.docs-solution-landing.docs-tutorial .default-content-wrapper ul {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: inherit;
+}
+.docs.docs-solution-landing.docs-tutorial .default-content-wrapper ul li {
+  list-style: none;
+  width: 100%;
+  margin: 0 14px 7px 0;
+}
+.docs.docs-solution-landing.docs-tutorial .default-content-wrapper ul li a {
+  line-height: 24px;
+  font-weight: var(--font-weight-700);
+  color: var(--non-spectrum-link-blue);
+}
+
+@media (min-width: 600px) {
+  .docs.docs-solution-landing.docs-tutorial .default-content-wrapper ul li {
+    width: 50%;
+  }
+}
+@media (min-width: 900px) {
+  .docs.docs-solution-landing.docs-tutorial .default-content-wrapper h2 {
+    font-size: var(--spectrum-font-size-700);
+  }
+  .docs.docs-solution-landing.docs-tutorial .default-content-wrapper ul li {
+    width: calc(33.33% - 16px);
   }
 }

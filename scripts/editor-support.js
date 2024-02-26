@@ -1,6 +1,15 @@
-import { decorateBlock, decorateButtons, decorateIcons, loadBlock } from './lib-franklin.js';
-
-const connectionPrefix = 'urn:aemconnection:';
+import {
+  decorateBlock,
+  decorateBlocks,
+  decorateButtons,
+  decorateIcons,
+  decorateSections,
+  loadBlock,
+  loadBlocks,
+} from './lib-franklin.js';
+// eslint-disable-next-line import/no-unresolved
+import { decorateRichtext } from './editor-support-rte.js';
+import { decorateMain, loadIms } from './scripts.js';
 
 // set aem content root
 window.hlx.aemRoot = '/content/exlm/global';
@@ -28,61 +37,88 @@ function restoreState(newBlock, state) {
 /**
  * Event listener for aue:content-patch, edit of a component
  */
-async function handleEditorUpdate(event) {
+
+async function applyChanges(event) {
+  // redecorate default content and blocks on patches (in the properties rail)
   const { detail } = event;
 
-  const resource = detail?.requestData?.target?.resource;
-  if (!resource) return;
+  const resource =
+    detail?.request?.target?.resource || // update, patch components
+    detail?.request?.target?.container?.resource || // update, patch, add to sections
+    detail?.request?.to?.container?.resource; // move in sections
+  if (!resource) return false;
+  const updates = detail?.response?.updates;
+  if (!updates.length) return false;
+  const { content } = updates[0];
+  if (!content) return false;
 
+  const parsedUpdate = new DOMParser().parseFromString(content, 'text/html');
   const element = document.querySelector(`[data-aue-resource="${resource}"]`);
-  const block = element?.parentElement?.closest('.block') || element?.closest('.block');
-  const blockResource = block?.getAttribute('data-aue-resource');
-  if (!block || !blockResource?.startsWith(connectionPrefix)) return;
 
-  // keep info about currently selected tab
-  const uiState = getState(block);
+  if (element) {
+    if (element.matches('main')) {
+      const newMain = parsedUpdate.querySelector(`[data-aue-resource="${resource}"]`);
+      newMain.style.display = 'none';
+      element.insertAdjacentElement('afterend', newMain);
+      decorateMain(newMain);
+      decorateRichtext(newMain);
+      await loadBlocks(newMain);
+      element.remove();
+      newMain.style.display = null;
+      // eslint-disable-next-line no-use-before-define
+      attachEventListners(newMain);
+      return true;
+    }
 
-  const updates = detail?.responseData?.updates;
-  if (updates.length > 0) {
-    const { content } = updates[0];
-    const newBlockDocument = new DOMParser().parseFromString(content, 'text/html');
-    const newBlock = newBlockDocument?.querySelector(`[data-aue-resource="${blockResource}"]`);
-    if (newBlock) {
-      newBlock.style.display = 'none';
-      block.insertAdjacentElement('afterend', newBlock);
-      // decorate buttons and icons
-      decorateButtons(newBlock);
-      decorateIcons(newBlock);
-      // decorate and load the block
-      decorateBlock(newBlock);
-      await loadBlock(newBlock);
-      // remove the old block and show the new one
-      block.remove();
-      newBlock.style.display = null;
-
-      restoreState(newBlock, uiState);
+    const block =
+      element.parentElement?.closest('.block[data-aue-resource]') || element?.closest('.block[data-aue-resource]');
+    if (block) {
+      const state = getState(block);
+      const blockResource = block.getAttribute('data-aue-resource');
+      const newBlock = parsedUpdate.querySelector(`[data-aue-resource="${blockResource}"]`);
+      if (newBlock) {
+        newBlock.style.display = 'none';
+        block.insertAdjacentElement('afterend', newBlock);
+        decorateButtons(newBlock);
+        decorateIcons(newBlock);
+        decorateBlock(newBlock);
+        await loadBlock(newBlock);
+        block.remove();
+        newBlock.style.display = null;
+        restoreState(newBlock, state);
+        return true;
+      }
+    } else {
+      // sections and default content, may be multiple in the case of richtext
+      const newElements = parsedUpdate.querySelectorAll(
+        `[data-aue-resource="${resource}"],[data-richtext-resource="${resource}"]`,
+      );
+      if (newElements.length) {
+        const { parentElement } = element;
+        if (element.matches('.section')) {
+          const [newSection] = newElements;
+          newSection.style.display = 'none';
+          element.insertAdjacentElement('afterend', newSection);
+          decorateButtons(newSection);
+          decorateIcons(newSection);
+          decorateRichtext(newSection);
+          decorateSections(parentElement);
+          decorateBlocks(parentElement);
+          await loadBlocks(parentElement);
+          element.remove();
+          newSection.style.display = null;
+        } else {
+          element.replaceWith(...newElements);
+          decorateButtons(parentElement);
+          decorateIcons(parentElement);
+          decorateRichtext(parentElement);
+        }
+        return true;
+      }
     }
   }
-}
 
-document.querySelector('main')?.addEventListener('aue:content-patch', handleEditorUpdate);
-
-// switch to the selected tab
-function handleSelectTabItem(tabItem) {
-  // get the corresponding tabs button
-  const buttonId = tabItem.getAttribute('aria-labelledby');
-  const button = tabItem.closest('.tabs.block').querySelector(`button[id="${buttonId}"]`);
-  // click it
-  button.click();
-}
-
-// switch to the selected carousel slide
-function handleSelectCarouselItem(carouselItem) {
-  carouselItem.parentElement.scrollTo({
-    top: 0,
-    left: carouselItem.offsetLeft - carouselItem.parentNode.offsetLeft,
-    behavior: 'instant',
-  });
+  return false;
 }
 
 /**
@@ -96,120 +132,61 @@ function handleEditorSelect(event) {
 
   // if a tab panel was selected
   if (event.target.closest('.tabpanel')) {
-    handleSelectTabItem(event.target.closest('.tabpanel'));
+    // switch to the selected tab
+    const tabItem = event.target.closest('.tabpanel');
+    // get the corresponding tabs button
+    const buttonId = tabItem.getAttribute('aria-labelledby');
+    const button = tabItem.closest('.tabs.block').querySelector(`button[id="${buttonId}"]`);
+    // click it
+    button.click();
   }
 
   // if a teaser in a carousel was selected
   if (event.target.closest('.panel-container')) {
-    handleSelectCarouselItem(event.target);
-  }
-}
-
-document.querySelector('main')?.addEventListener('aue:ui-select', handleEditorSelect);
-
-// handle reording of tabs
-function handleMoveTabItem(detail) {
-  // get tab button ids to get reordered
-  const buttonMovedId = document
-    .querySelector(`[data-aue-resource="${detail?.from?.component?.resource}"]`)
-    ?.getAttribute('aria-labelledby');
-  const buttonAfterId = document
-    .querySelector(`[data-aue-resource="${detail?.to?.before?.resource}"]`)
-    ?.getAttribute('aria-labelledby');
-  if (buttonMovedId && buttonAfterId) {
-    // get the tabs block
-    const block = document.querySelector(`[data-aue-resource="${detail?.from?.container?.resource}"]`);
-    // get the 2 buttons
-    const moveButton = block.querySelector(`button[id="${buttonMovedId}"]`);
-    const afterButton = block.querySelector(`button[id="${buttonAfterId}"]`);
-    // do the reordering
-    afterButton.before(moveButton);
-    // fix data-tab-ids so that content-patch state store/restore works correctly
-    block.querySelectorAll('button[role="tab"]').forEach((elem, i) => {
-      elem.dataset.tabId = i;
+    // switch to the selected carousel slide
+    const carouselItem = event.target;
+    carouselItem.parentElement.scrollTo({
+      top: 0,
+      left: carouselItem.offsetLeft - carouselItem.parentNode.offsetLeft,
+      behavior: 'instant',
     });
   }
 }
 
-// handle reordering of carousel slides
-function handlerMoveSlide(detail) {
-  // get the slide ids
-  const slideMovedId = document.querySelector(`[data-aue-resource="${detail?.from?.component?.resource}"]`)?.dataset
-    .panel;
-  const slideAfterId = document.querySelector(`[data-aue-resource="${detail?.to?.before?.resource}"]`)?.dataset.panel;
-  if (slideMovedId && slideAfterId) {
-    // get the carousel buttons block
-    const block = document.querySelector(
-      `[data-aue-resource="${detail?.from?.container?.resource}"] .button-container`,
-    );
-    // get the 2 buttons
-    const moveButton = block.querySelector(`button[data-panel="${slideMovedId}"]`);
-    const afterButton = block.querySelector(`button[data-panel="${slideAfterId}"]`);
-    // do the reordering
-    afterButton.before(moveButton);
-  }
+function attachEventListners(main) {
+  ['aue:content-patch', 'aue:content-update', 'aue:content-add', 'aue:content-move', 'aue:content-remove'].forEach(
+    (eventType) =>
+      main?.addEventListener(eventType, async (event) => {
+        event.stopPropagation();
+        const applied = await applyChanges(event);
+        if (!applied) window.location.reload();
+      }),
+  );
+
+  main.addEventListener('aue:ui-select', handleEditorSelect);
 }
 
-/**
- * Event listener for aue:content-move,  moving a component
- */
-function handleEditorMove(event) {
-  // if a tab panel was moved
-  if (event.target.closest('.tabpanel')) {
-    handleMoveTabItem(event.detail);
+attachEventListners(document.querySelector('main'));
+
+// temporary workaround until aue:ui-edit and aue:ui-preview events become available
+// show/hide sign-up block when switching betweeen UE Edit mode and preview
+const signUpBlock = document.querySelector('.block.sign-up');
+if (signUpBlock) {
+  // check if user is signed in
+  try {
+    await loadIms();
+  } catch {
+    // eslint-disable-next-line no-console
+    console.warn('Adobe IMS not available.');
   }
 
-  // if a carousel slide was moved
-  if (event.target.closest('.panel-container')) {
-    handlerMoveSlide(event.detail);
-  }
-}
-
-document.querySelector('main')?.addEventListener('aue:content-move', handleEditorMove);
-
-// group editable texts in single wrappers if applicable
-//
-// this should work reliably as the script executes after the scripts.js and hence all sections
-// should be decorated already.
-(function mergeRichtexts() {
-  const aueDataAttrs = ['aueBehavior', 'aueProp', 'aueResource', 'aueType', 'aueFilter'];
-
-  function removeInstrumentation(on) {
-    aueDataAttrs.forEach((attr) => delete on.dataset[attr]);
-  }
-
-  function moveInstrumentation(from, to) {
-    aueDataAttrs.forEach((attr) => {
-      to.dataset[attr] = from.dataset[attr];
-    });
-    removeInstrumentation(from);
-  }
-
-  // any of initialized, loading or loaded
-  const editables = [...document.querySelectorAll('[data-aue-type="richtext"]:not(div)')];
-  while (editables.length) {
-    const editable = editables.shift();
-    // group rich texts
-    // eslint-disable-next-line object-curly-newline
-    const { aueProp, aueResource } = editable.dataset;
-    const container = document.createElement('div');
-    moveInstrumentation(editable, container);
-    editable.replaceWith(container);
-    container.append(editable);
-    while (editables.length) {
-      const nextEditable = editables.shift();
-      // TODO: check if nextEditable is a consecutive sibling of the current editable.
-      // should never happane, as AEM renders the paragraphs of a single text component
-      // conescutively anyway. however there may be some inference with auto blocking
-      // eventually.
-      const { aueProp: nextAueProp, aueResource: nextAueResource } = nextEditable.dataset;
-      if (aueProp === nextAueProp && nextAueResource === aueResource) {
-        removeInstrumentation(nextEditable);
-        container.append(nextEditable);
+  new MutationObserver((e) => {
+    e.forEach((change) => {
+      if (change.target.classList.contains('adobe-ue-edit')) {
+        signUpBlock.style.display = 'block';
       } else {
-        editables.unshift(nextEditable);
-        break;
+        signUpBlock.style.display = window.adobeIMS?.isSignedInUser() ? 'none' : 'block';
       }
-    }
-  }
-})();
+    });
+  }).observe(document.documentElement, { attributeFilter: ['class'] });
+}

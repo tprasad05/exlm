@@ -8,12 +8,14 @@ import {
   getFiltersPaginationText,
   getBrowseFiltersResultCount,
   getSelectedTopics,
+  getParsedSolutionsQuery,
+  getCoveoFacets,
 } from './browse-filter-utils.js';
 import initiateCoveoHeadlessSearch, { fragment } from '../../scripts/coveo-headless/index.js';
 import BrowseCardsCoveoDataAdaptor from '../../scripts/browse-card/browse-cards-coveo-data-adaptor.js';
 import { buildCard } from '../../scripts/browse-card/browse-card.js';
 import BuildPlaceholder from '../../scripts/browse-card/browse-card-placeholder.js';
-import { formattedTopicsTags, handleTopicSelection } from './browse-topics.js';
+import { formattedTags, handleTopicSelection, dispatchCoveoAdvancedQuery } from './browse-topics.js';
 
 const coveoFacetMap = {
   Role: 'headlessRoleFacet',
@@ -22,7 +24,7 @@ const coveoFacetMap = {
 };
 
 const coveoFacetFilterNameMap = {
-  el_type: 'Content Type',
+  el_contenttype: 'Content Type',
   el_role: 'Role',
   el_level: 'Experience Level',
 };
@@ -96,14 +98,25 @@ function updateClearFilterStatus(block) {
     return acc;
   }, []);
   const hasActiveTopics = block.querySelector('.browse-topics') !== null && selectedTopics.length > 0;
-  const browseFiltersSection = document.querySelector('.browse-filters-form');
+  const browseFiltersContainer = document.querySelector('.browse-filters-container');
+  const browseFiltersSection = browseFiltersContainer.querySelector('.browse-filters-form');
+  const selectionContainer = browseFiltersSection.querySelector('.browse-filters-input-container');
+  const containsSelection = selectionContainer.classList.contains('browse-filters-input-selected');
   if (hasActiveTopics || tagsProxy.length !== 0 || searchEl.value) {
     clearFilterBtn.disabled = false;
     hideSectionsBelowFilter(block, false);
+    browseFiltersContainer.classList.add('browse-filters-full-container');
+    selectionContainer.classList.add('browse-filters-input-selected');
+    if (!containsSelection && window.headlessBaseSolutionQuery) {
+      dispatchCoveoAdvancedQuery(window.headlessBaseSolutionQuery, false);
+    }
     hildeSectionsWithinFilter(browseFiltersSection, true);
   } else {
     clearFilterBtn.disabled = true;
     hideSectionsBelowFilter(block, true);
+    browseFiltersContainer.classList.remove('browse-filters-full-container');
+    selectionContainer.classList.remove('browse-filters-input-selected');
+    dispatchCoveoAdvancedQuery('', true);
     hildeSectionsWithinFilter(browseFiltersSection, false);
   }
 }
@@ -241,9 +254,12 @@ function handleTagsClick(block) {
       const coveoFacetKey = coveoFacetMap[name];
       const coveoFacet = window[coveoFacetKey];
       if (coveoFacet) {
-        coveoFacet.toggleSelect({
-          state: 'idle',
-          value,
+        const facets = getCoveoFacets(value, false);
+        facets.forEach(({ state, value: facetValue }) => {
+          coveoFacet.toggleSelect({
+            state,
+            value: facetValue,
+          });
         });
       }
       removeFromTags(block, value);
@@ -274,19 +290,25 @@ function handleCheckboxClick(block, el, options) {
       });
 
       if (coveoFacet) {
-        coveoFacet.toggleSelect({
-          state: 'selected',
-          value,
+        const facets = getCoveoFacets(value, true);
+        facets.forEach(({ state, value: facetValue }) => {
+          coveoFacet.toggleSelect({
+            state,
+            value: facetValue,
+          });
         });
       }
     } else {
       options.selected -= 1;
-      removeFromTags(block, label);
+      removeFromTags(block, value);
 
       if (coveoFacet) {
-        coveoFacet.toggleSelect({
-          state: 'idle',
-          value,
+        const facets = getCoveoFacets(value, false);
+        facets.forEach(({ state, value: facetValue }) => {
+          coveoFacet.toggleSelect({
+            state,
+            value: facetValue,
+          });
         });
       }
     }
@@ -348,10 +370,6 @@ function onInputSearch(block) {
       // eslint-disable-next-line no-console
       console.log('add search logic here');
     }
-  });
-
-  searchEl.addEventListener('input', () => {
-    updateClearFilterStatus(block);
   });
 }
 
@@ -486,20 +504,22 @@ function handleUriHash() {
     if (keyName) {
       const filterOptionEl = browseFiltersSection.querySelector(`.filter-dropdown[data-filter-type="${keyName}"]`);
       if (filterOptionEl) {
-        facetValues.forEach((facetValue) => {
+        facetValues.forEach((facetValueString) => {
+          const [facetValue] = facetValueString.split('|');
           const inputEl = filterOptionEl.querySelector(`input[value="${facetValue}"]`);
-          const label = inputEl?.dataset.label || '';
-
-          inputEl.checked = true;
-          appendTag(browseFiltersSection, {
-            name: keyName,
-            label,
-            value: facetValue,
-          });
+          if (!inputEl.checked) {
+            const label = inputEl?.dataset.label || '';
+            inputEl.checked = true;
+            appendTag(browseFiltersSection, {
+              name: keyName,
+              label,
+              value: facetValue,
+            });
+          }
         });
         const ddObject = getObjectByName(dropdownOptions, keyName);
         const btnEl = filterOptionEl.querySelector(':scope > button');
-        const selectedCount = facetValues.length;
+        const selectedCount = facetValues.filter((facet) => !facet.includes('|')).length;
         ddObject.selected = selectedCount;
         if (selectedCount === 0) {
           btnEl.firstChild.textContent = keyName;
@@ -520,7 +540,8 @@ function handleUriHash() {
       const contentDiv = document.querySelector('.browse-topics');
       const buttons = contentDiv.querySelectorAll('button');
       Array.from(buttons).forEach((button) => {
-        if (selectedTopics.includes(button.dataset.topicname)) {
+        const matchFound = selectedTopics.find((topic) => button.dataset.topicname?.includes(topic));
+        if (matchFound) {
           button.classList.add('browse-topics-item-active');
         } else {
           button.classList.remove('browse-topics-item-active');
@@ -530,6 +551,9 @@ function handleUriHash() {
   });
   if (!containsSearchQuery) {
     searchInput.value = '';
+  }
+  if (filtersInfo.length && window.headlessBaseSolutionQuery) {
+    handleTopicSelection();
   }
   updateClearFilterStatus(browseFiltersSection);
   window.headlessSearchEngine.executeFirstSearch();
@@ -600,11 +624,12 @@ function constructFilterPagination(block) {
 }
 
 function renderPageNumbers() {
-  const filtersPaginationEl = document.querySelector('.browse-filters-pagination');
+  const browseFiltersBlock = document.querySelector('.browse-filters');
+  const filtersPaginationEl = browseFiltersBlock?.querySelector('.browse-filters-pagination');
   if (!filtersPaginationEl || !window.headlessPager) {
     return;
   }
-
+  const browseResults = browseFiltersBlock.querySelector('.browse-filters-results');
   const currentPageNumber = window.headlessPager?.state?.currentPage || 1;
   const pgCount = window.headlessPager?.state?.maxPage || 1;
   const paginationTextEl = filtersPaginationEl.querySelector('.browse-filters-pagination-text');
@@ -630,8 +655,10 @@ function renderPageNumbers() {
   }
   if (pgCount === 1) {
     filtersPaginationEl.classList.add('browse-filters-pagination-hidden');
+    browseResults.classList.add('browse-filters-one-pg-result');
   } else {
     filtersPaginationEl.classList.remove('browse-filters-pagination-hidden');
+    browseResults.classList.remove('browse-filters-one-pg-result');
   }
 }
 
@@ -642,7 +669,16 @@ function renderSearchQuerySummary() {
   }
   const numberFormat = new Intl.NumberFormat('en-US');
   const resultsCount = window.headlessQuerySummary.state.total;
-  queryEl.textContent = !resultsCount ? '' : `Showing ${numberFormat.format(resultsCount)} assets`;
+  let assetString;
+  if (!resultsCount) {
+    assetString = '';
+  } else if (resultsCount === 1) {
+    assetString = placeholders.showAsset || 'Showing 1 asset';
+  } else {
+    const formattedCount = numberFormat.format(resultsCount);
+    assetString = placeholders.showAssets?.replace('{x}', formattedCount) || `Showing ${formattedCount} assets`;
+  }
+  queryEl.textContent = assetString;
 }
 
 function handleCoveoHeadlessSearch(
@@ -755,22 +791,32 @@ function renderSortContainer(block) {
 }
 
 function decorateBrowseTopics(block) {
-  const firstChild = block.querySelector('div:first-child');
-  const secondChild = block.querySelector('div:nth-child(2)');
-  const headingElement = block.querySelector('div:nth-child(1) > div');
-  const topics = block.querySelector('div:nth-child(2) > div').textContent.trim();
-  const allTopicsTags = topics !== '' ? formattedTopicsTags(topics) : '';
+  const [...configs] = [...block.children].map((row) => row.firstElementChild);
+
+  const [firstChild, secondChild, thirdChild] = configs.map((cell) => cell);
+  const [solutions, headingElement, topics] = configs.map((cell) => (cell ? cell.textContent.trim() : ''));
+  // eslint-disable-next-line no-unused-vars
+  const allSolutionsTags = solutions !== '' ? formattedTags(solutions) : '';
+  const allTopicsTags = topics !== '' ? formattedTags(topics) : '';
+  const supportedProducts = [];
+  if (allSolutionsTags.length) {
+    const { query: additionalQuery, products } = getParsedSolutionsQuery(allSolutionsTags);
+    products.forEach((p) => supportedProducts.push(p));
+    window.headlessBaseSolutionQuery = additionalQuery;
+  }
+
   const div = document.createElement('div');
   div.classList.add('browse-topics');
 
   const headerDiv = htmlToElement(`
     <div class="browse-topics-block-header">
       <div class="browse-topics-block-title">
-          <h2>${headingElement?.textContent.trim()}</h2>
+          <h2>${headingElement}</h2>
       </div>
     </div>
   `);
 
+  const solutionsDiv = document.createElement('div');
   const contentDiv = document.createElement('div');
   contentDiv.classList.add('browse-topics-block-content');
   const browseFiltersSection = document.querySelector('.browse-filters-form');
@@ -779,9 +825,10 @@ function decorateBrowseTopics(block) {
     allTopicsTags
       .filter((value) => value !== undefined)
       .forEach((topicsButtonTitle) => {
-        const topicName = atob(topicsButtonTitle);
+        const parts = topicsButtonTitle.split('/');
+        const topicName = parts[parts.length - 1];
         const topicsButtonDiv = createTag('button', { class: 'browse-topics browse-topics-item' });
-        topicsButtonDiv.dataset.topicname = topicName;
+        topicsButtonDiv.dataset.topicname = topicsButtonTitle;
         topicsButtonDiv.innerHTML = topicName;
         contentDiv.appendChild(topicsButtonDiv);
       });
@@ -793,8 +840,8 @@ function decorateBrowseTopics(block) {
         } else {
           e.target.classList.add('browse-topics-item-active');
         }
-        updateClearFilterStatus(browseFiltersSection);
         handleTopicSelection(contentDiv);
+        updateClearFilterStatus(browseFiltersSection);
       }
     });
     const decodedHash = decodeURIComponent(window.location.hash);
@@ -804,20 +851,26 @@ function decorateBrowseTopics(block) {
       const selectedTopics = getSelectedTopics(filtersInfo);
       if (selectedTopics && selectedTopics.length > 0) {
         selectedTopics.forEach((topic) => {
-          const element = contentDiv.querySelector(`.browse-topics-item[data-topicname="${topic}"]`);
-          element.classList.add('browse-topics-item-active');
+          const element = contentDiv.querySelector(`.browse-topics-item[data-topicname*="${topic}"]`);
+          if (element) {
+            element.classList.add('browse-topics-item-active');
+          }
         });
         handleTopicSelection(contentDiv);
       }
     }
 
-    firstChild.parentNode.replaceChild(headerDiv, firstChild);
-    secondChild.parentNode.replaceChild(contentDiv, secondChild);
+    firstChild.parentNode.replaceChild(solutionsDiv, firstChild);
+    secondChild.parentNode.replaceChild(headerDiv, secondChild);
+    thirdChild.parentNode.replaceChild(contentDiv, thirdChild);
     div.append(headerDiv);
     div.append(contentDiv);
     /* Append browse topics right above the filters section */
     const filtersFormEl = document.querySelector('.browse-filters-form');
     filtersFormEl.insertBefore(div, filtersFormEl.children[4]);
+  } else {
+    firstChild.innerHTML = '';
+    secondChild.innerHTML = '';
   }
 }
 

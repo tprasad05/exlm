@@ -563,6 +563,19 @@ hr {
   border-bottom: 1px solid var(--overlay-background-color);
 }
 
+em:has(> u),
+em > u {
+  text-decoration: none;
+  font-style: normal;
+  background-color: rgba(255, 255, 0, 0.2);
+  display: inline-block;
+}
+
+em > a > u {
+  background-color: rgba(255, 255, 0, 0.2);
+  display: inline-block;
+}
+
 ul {
   margin-left: 28px;
   list-style-type: disc;
@@ -822,10 +835,30 @@ main > div.browse-rail {
   display: none;
 }
 
-body[class^=browse-] main {
+body[class^=browse-] main.browse-background-img {
   background-image: url("/icons/solutions/BrowseDecorationMobile.svg");
   background-repeat: no-repeat;
   background-position: top right;
+}
+
+body[class^=browse-] .browse-filters-full-container .browse-filters-pagination, body[class^=browse-] .browse-filters-full-container .browse-filters-one-pg-result {
+  margin-bottom: 40px;
+}
+
+.nav-overlay {
+  background: rgba(0, 0, 0, 0.5019607843) 0% 0% no-repeat padding-box;
+  inset: 0;
+  position: fixed;
+  z-index: 3;
+}
+@media (min-width: 1024px) {
+  .nav-overlay {
+    display: none;
+  }
+}
+
+.nav-overlay.hidden {
+  display: none;
 }
 
 /* three column layout */
@@ -975,6 +1008,9 @@ body[class^=browse-] main {
   .docs main > div.section {
     border-right: 1px solid #eaeaea;
   }
+  .docs main > div.section:not(.rail), .docs main > div.section.rail-right {
+    border-right: none;
+  }
   .docs main > div.section:not(.toc-container, .mini-toc-container) {
     overflow: auto;
     padding-block: 0;
@@ -1112,9 +1148,12 @@ body[class^=browse-] main {
   .docs.docs-solution-landing.docs-tutorial .default-content-wrapper ul li {
     width: 50%;
   }
-  body[class^=browse-] main {
+  body[class^=browse-] main.browse-background-img {
     background-image: url("/icons/solutions/BrowseDecoration.svg");
     background-size: contain;
+  }
+  body[class^=browse-] .browse-filters-full-container .browse-filters-pagination, body[class^=browse-] .browse-filters-full-container .browse-filters-one-pg-result {
+    margin-bottom: 58px;
   }
 }
 @media (min-width: 900px) {
@@ -1123,6 +1162,34 @@ body[class^=browse-] main {
   }
   .docs.docs-solution-landing.docs-tutorial .default-content-wrapper ul li {
     width: calc(33.33% - 16px);
+  }
+  .docs main.rail-left-closed.rail-right-closed .section.content-section-first.content-section-last {
+    padding-right: 0;
+    margin-right: 0;
+    max-width: calc(100vw - 100px);
+  }
+  .docs main.rail-left-closed.rail-right-closed .default-content-wrapper p {
+    max-width: 95%;
+  }
+  body[class^=browse-] .browse-cards-block-content {
+    margin-bottom: 0;
+  }
+  body[class^=browse-] .browse-filters-container {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  body[class^=browse-] .browse-cards-block {
+    min-height: auto;
+  }
+  body[class^=browse-] .section.curated-cards-container, body[class^=browse-] .section.events-cards-container, body[class^=browse-] .section.teaser-container, body[class^=browse-] .section.adls-cards-container {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+  body[class^=browse-] .browse-filters-full-container .browse-filters-pagination, body[class^=browse-] .browse-filters-full-container .browse-filters-one-pg-result {
+    margin-bottom: 82px;
+  }
+  body[class^=browse-] .browse-filters-form .browse-hide-section + .browse-topics {
+    margin-bottom: 8px;
   }
 }
 /* browse rail breakpoint same as main hamburger menu (>= 1024px) */
@@ -1149,7 +1216,7 @@ body[class^=browse-] main {
 }
 @media (width >= 1440px) {
   body[class^=browse-] main {
-    background-position: -56px 0;
+    background-position: -36px 0;
   }
   body.browse-all main,
   body.browse-product main {
@@ -1158,5 +1225,20 @@ body[class^=browse-] main {
   body.browse-all main > div.section,
   body.browse-product main > div.section {
     padding: 30px 32px;
+  }
+  body.browse-all main > div.section.browse-breadcrumb-container,
+  body.browse-product main > div.section.browse-breadcrumb-container {
+    padding-top: 24px;
+    padding-bottom: 0;
+  }
+  body.browse-all main > div.section.sign-up-container,
+  body.browse-product main > div.section.sign-up-container {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  body.browse-all .section.browse-filters-container,
+  body.browse-product .section.browse-filters-container {
+    padding-top: 0;
+    padding-bottom: 0;
   }
 }
